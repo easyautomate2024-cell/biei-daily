@@ -228,6 +228,27 @@ li.overdue { color: var(--minus); }
 .koyomi-desc { font-size: 14.5px; }
 .koyomi-next { margin-top: 12px; font-size: 13px !important; color: var(--accent) !important; font-weight: 600; }
 
+/* ===== 麦秋メーター ===== */
+.bakushu-status { font-size: 13px !important; color: var(--muted); }
+.bakushu-bar {
+  height: 14px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: 980px;
+  overflow: hidden;
+  margin: 12px 0 6px;
+}
+.bakushu-fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, #7fb069 0%, #c9cf8e 55%, #d4a937 100%);
+  border-radius: 980px;
+  transition: width 0.6s ease;
+}
+.bakushu-scale { display: flex; justify-content: space-between; font-size: 11px; color: #9b9ba0; }
+.bakushu-pred { margin-top: 12px; font-size: 16px !important; font-weight: 700; color: var(--text) !important; }
+.bakushu-stage { font-size: 13px !important; color: var(--accent) !important; font-weight: 600; margin-top: 2px; }
+
 /* ===== ギャラリー ===== */
 .gallery-grid {
   display: grid;

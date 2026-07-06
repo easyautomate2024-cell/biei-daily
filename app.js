@@ -227,6 +227,185 @@ function renderKoyomi() {
   document.getElementById("koyomi-next").textContent = `このあとの丘: ${next.title}(${nm}/${nd}頃〜)`;
 }
 
+// ── 麦秋メーター(平年比方式・積算温度) ──────────────────
+// 美瑛の日平均気温を4/1から積算(基準0℃)し、過去10年の平年ペースと比較して
+// 「今年の麦秋(小麦が金色になる)ピーク」を相対推定する。
+const BAKUSHU_PEAK_MMDD = "07-20"; // 平年の麦秋ピークの目安
+const GDD_START_MMDD = "04-01"; // 積算開始(融雪・起生期の目安)
+const ARCHIVE_API = "https://archive-api.open-meteo.com/v1/archive";
+
+function cacheGet(key, maxAgeMs) {
+  try {
+    const c = JSON.parse(localStorage.getItem(key));
+    if (c && Date.now() - c.ts < maxAgeMs) return c.data;
+  } catch (e) { /* 破損時は無視 */ }
+  return null;
+}
+function cacheSet(key, data) {
+  try { localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data })); } catch (e) { /* 容量超過等は無視 */ }
+}
+
+async function fetchDailyMeans(start, end) {
+  const url =
+    `${ARCHIVE_API}?latitude=${LAT}&longitude=${LON}` +
+    `&start_date=${start}&end_date=${end}` +
+    "&daily=temperature_2m_mean&timezone=Asia%2FTokyo";
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(res.status);
+  const d = await res.json();
+  return { time: d.daily.time, temp: d.daily.temperature_2m_mean };
+}
+
+// year年の 4/1〜8/31 の累積積算温度(基準0℃)。データ未着の末尾はnull。
+function cumulativeGdd(times, temps, year) {
+  const out = [];
+  let sum = 0;
+  for (let i = 0; i < times.length; i++) {
+    const t = times[i];
+    if (!t.startsWith(String(year))) continue;
+    const mmdd = t.slice(5);
+    if (mmdd < GDD_START_MMDD || mmdd > "08-31") continue;
+    const v = temps[i];
+    if (v === null || v === undefined) { out.push(null); continue; }
+    sum += Math.max(0, v);
+    out.push(sum);
+  }
+  return out;
+}
+
+async function getNormalCurve(year) {
+  const key = `bakushu-normal-${year}`;
+  const hit = cacheGet(key, 30 * 86400000);
+  if (hit) return hit;
+  const d = await fetchDailyMeans(`${year - 10}-04-01`, `${year - 1}-08-31`);
+  const curves = [];
+  for (let y = year - 10; y <= year - 1; y++) {
+    const c = cumulativeGdd(d.time, d.temp, y);
+    if (c.filter((v) => v !== null).length > 100) curves.push(c);
+  }
+  const len = Math.min(...curves.map((c) => c.length));
+  const avg = [];
+  for (let i = 0; i < len; i++) {
+    let s = 0, n = 0;
+    for (const c of curves) if (c[i] !== null) { s += c[i]; n++; }
+    avg.push(n ? s / n : null);
+  }
+  cacheSet(key, avg);
+  return avg;
+}
+
+function mmddOfIndex(year, idx) {
+  const d = new Date(`${year}-${GDD_START_MMDD}T00:00:00`);
+  d.setDate(d.getDate() + idx);
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+function bakushuStage(progressPct) {
+  if (progressPct < 25) return "生育初期 — 丘はまだ深い緑";
+  if (progressPct < 60) return "茎立ち〜出穂 — 麦の穂が出そろう頃";
+  if (progressPct < 95) return "登熟期 — 緑から金色へ色づいていく";
+  if (progressPct < 108) return "麦秋ピーク圏 — 丘が金色に輝く";
+  return "収穫期 — 麦稈ロールが転がり出す";
+}
+
+async function loadBakushu() {
+  const status = document.getElementById("bakushu-status");
+  const pred = document.getElementById("bakushu-pred");
+  const stage = document.getElementById("bakushu-stage");
+  const fill = document.getElementById("bakushu-fill");
+  const barWrap = document.getElementById("bakushu-bar-wrap");
+  try {
+    const today = tokyoDateStr();
+    const year = Number(today.slice(0, 4));
+    const mmdd = today.slice(5);
+
+    // シーズンオフ(9/1〜3/31): 次の積算開始までのカウントダウン
+    if (mmdd < GDD_START_MMDD || mmdd > "08-31") {
+      const nextYear = mmdd > "08-31" ? year + 1 : year;
+      const days = Math.ceil(
+        (new Date(`${nextYear}-${GDD_START_MMDD}T00:00:00`) - new Date(`${today}T00:00:00`)) / 86400000
+      );
+      status.textContent = "シーズンオフ — 小麦は雪の下で春を待っています。";
+      pred.textContent = `次の積算スタート(4/1)まで あと${days}日`;
+      stage.textContent = `平年の麦秋ピークは 7/20 頃。来季もここでカウントします。`;
+      barWrap.classList.add("hidden");
+      return;
+    }
+
+    const [normal, cur] = await Promise.all([
+      getNormalCurve(year),
+      (async () => {
+        const key = `bakushu-cur-${today}`;
+        const hit = cacheGet(key, 6 * 3600000);
+        if (hit) return hit;
+        // アーカイブAPIは直近約5日が未収録のため、末尾は予報APIの実績値で補う
+        const cut = new Date(`${today}T00:00:00`);
+        cut.setDate(cut.getDate() - 7);
+        const cutStr = cut.toISOString().slice(0, 10);
+        const arch = await fetchDailyMeans(`${year}-04-01`, cutStr);
+        const res = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}` +
+            "&daily=temperature_2m_mean&past_days=7&forecast_days=1&timezone=Asia%2FTokyo"
+        );
+        if (!res.ok) throw new Error(res.status);
+        const rec = (await res.json()).daily;
+        const time = [...arch.time];
+        const temp = [...arch.temp];
+        for (let i = 0; i < rec.time.length; i++) {
+          if (rec.time[i] > cutStr && rec.time[i] <= today) {
+            time.push(rec.time[i]);
+            temp.push(rec.temperature_2m_mean[i]);
+          }
+        }
+        const c = cumulativeGdd(time, temp, year);
+        cacheSet(key, c);
+        return c;
+      })(),
+    ]);
+
+    // 今年の最新値(データ未着の末尾nullを除く)
+    let j = cur.length - 1;
+    while (j >= 0 && cur[j] === null) j--;
+    if (j < 0) throw new Error("no data");
+    const v = cur[j];
+
+    // 平年カーブ上で同じ積算値に達する日を探す
+    let i = normal.findIndex((n) => n !== null && n >= v);
+    if (i < 0) i = normal.length - 1;
+    const earlyDays = i - j; // 正 = 今年は平年より早い
+
+    // 平年ピーク日の平年積算値に対する進捗
+    const peakIdx = Math.round(
+      (new Date(`${year}-${BAKUSHU_PEAK_MMDD}T00:00:00`) - new Date(`${year}-${GDD_START_MMDD}T00:00:00`)) / 86400000
+    );
+    const peakGdd = normal[Math.min(peakIdx, normal.length - 1)];
+    const progress = Math.max(0, Math.min(115, (v / peakGdd) * 100));
+
+    // 予測ピーク日 = 平年ピーク − 早い日数
+    const predDate = new Date(`${year}-${BAKUSHU_PEAK_MMDD}T00:00:00`);
+    predDate.setDate(predDate.getDate() - earlyDays);
+    const predStr = `${predDate.getMonth() + 1}/${predDate.getDate()}`;
+
+    const paceStr =
+      earlyDays > 1 ? `平年より${earlyDays}日早いペース`
+      : earlyDays < -1 ? `平年より${-earlyDays}日遅いペース`
+      : "ほぼ平年並みのペース";
+
+    status.textContent = `積算温度 ${Math.round(v)}℃・日(${mmddOfIndex(year, j)}時点) — ${paceStr}`;
+    fill.style.width = `${Math.min(100, progress)}%`;
+    pred.textContent =
+      progress >= 105
+        ? `今年の麦秋ピークは過ぎました(推定 ${predStr} 頃)。丘は収穫の季節へ。`
+        : `金色ピーク予想: ${predStr} 頃(平年 7/20 頃)`;
+    stage.textContent = `いまの段階: ${bakushuStage(progress)}`;
+  } catch (e) {
+    status.textContent = "積算データの取得に失敗しました。時間をおいて再読み込みしてください。";
+    barWrap.classList.add("hidden");
+    pred.textContent = "";
+    stage.textContent = "";
+  }
+}
+
 // ── 十勝岳 火山情報(気象庁・噴火警報/予報) ──────────────
 const VOLCANO_URL = "https://www.jma.go.jp/bosai/volcano/data/warning/108.json";
 
@@ -260,6 +439,7 @@ async function loadVolcano() {
 async function main() {
   renderKoyomi();
   loadVolcano();
+  loadBakushu();
   const today = tokyoDateStr();
   const tomorrow = tokyoDateStr(1);
   document.getElementById("today-date").textContent = `（${today}）`;
