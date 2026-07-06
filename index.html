@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>今日の美瑛 — データで読む、美瑛のいま</title>
+<meta name="description" content="美瑛のいまをデータで読む非公式ガイド。白金青い池の見頃スコア、丘の朝霧・雲海チャンス、光の時刻表、丘の色ごよみ、十勝岳の火山情報を毎日自動更新。">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a class="nav-logo" href="index.html">
+      <span class="logo-main">今日の美瑛</span>
+      <span class="logo-sub">BIEI DAILY</span>
+    </a>
+    <div class="nav-links">
+      <a href="logic.html">スコアの仕組み</a>
+      <a href="https://www.instagram.com/biei_explorer/" rel="noopener" class="nav-cta">Instagram</a>
+    </div>
+  </div>
+</nav>
+<header class="hero photo">
+  <p class="hero-eyebrow">Biei, Hokkaido</p>
+  <h1>今日の美瑛</h1>
+  <p class="hero-sub">データで読む、美瑛のいま — 青い池・朝霧・丘の色 <span id="today-date"></span></p>
+  <div class="now" id="now-box">
+    <span id="now-temp">--℃</span>
+    <span id="now-cloud">雲量 --%</span>
+    <span id="now-wind">風 -- m/s</span>
+  </div>
+</header>
+
+<main>
+  <div id="error-box" class="error hidden">気象データの取得に失敗しました。時間をおいて再読み込みしてください。</div>
+
+  <section id="volcano-box" class="alert-box info hidden">
+    <h3>⛰ 十勝岳 火山情報</h3>
+    <p id="volcano-text">読み込み中…</p>
+    <p class="note">出典: <a href="https://www.jma.go.jp/bosai/map.html#contents=volcano" rel="noopener">気象庁 火山登山者向けの情報提供ページ</a> — 白金・望岳台方面へ行く前に最新情報をご確認ください。</p>
+  </section>
+
+  <section class="cards">
+    <article class="card" id="pond-card">
+      <img class="card-photo" src="photos/pond-birch.jpg" alt="白樺の幹越しに見る白金青い池のターコイズブルーの水面">
+      <p class="eyebrow">Blue Pond Score</p>
+      <h2>今日の青い池スコア</h2>
+      <div class="score-wrap">
+        <div class="score-ring" id="pond-ring"><span id="pond-score">--</span></div>
+        <div>
+          <p class="verdict" id="pond-verdict">計算中…</p>
+          <p class="advice" id="pond-advice"></p>
+        </div>
+      </div>
+      <ul class="reasons" id="pond-reasons"></ul>
+      <p class="note">※ 雲量・直近の降水・風から算出した推定です。実際の色を保証するものではありません。 <a href="logic.html">スコアの仕組み →</a></p>
+    </article>
+
+    <article class="card" id="fog-card">
+      <img class="card-photo" src="photos/fog-hills2.jpg" alt="美瑛の朝霧を貫いて差し込む光芒">
+      <p class="eyebrow">Morning Fog Forecast</p>
+      <h2>明朝の霧・雲海チャンス</h2>
+      <div class="score-wrap">
+        <div class="score-ring fog" id="fog-ring"><span id="fog-score">--</span></div>
+        <div>
+          <p class="verdict" id="fog-verdict">計算中…</p>
+          <p class="advice" id="fog-advice"></p>
+        </div>
+      </div>
+      <ul class="reasons" id="fog-reasons"></ul>
+      <p class="note">※ 放射冷却型の朝霧(晴天・無風・高湿度)の条件充足度です。 <a href="logic.html">スコアの仕組み →</a></p>
+    </article>
+  </section>
+
+  <section class="card sun-card">
+    <img class="card-photo wide" src="photos/fog-hills3.jpg" alt="十勝岳連峰と雲海の上に昇る朝日">
+    <p class="eyebrow">Sun Timetable</p>
+    <h2>光の時刻表</h2>
+    <div class="sun-grid">
+      <div><span class="sun-label">明朝の日の出</span><span class="sun-time" id="sunrise">--:--</span></div>
+      <div><span class="sun-label">今日の日の入り</span><span class="sun-time" id="sunset">--:--</span></div>
+      <div><span class="sun-label">朝焼け狙い(日の出30分前)</span><span class="sun-time" id="golden-am">--:--</span></div>
+      <div><span class="sun-label">夕景狙い(日の入り30分前)</span><span class="sun-time" id="golden-pm">--:--</span></div>
+    </div>
+  </section>
+
+  <section class="card koyomi-card">
+    <p class="eyebrow">Hill Color Calendar</p>
+    <h2>丘の色ごよみ</h2>
+    <p class="koyomi-period" id="koyomi-period">--</p>
+    <h3 class="koyomi-title" id="koyomi-title">--</h3>
+    <div class="koyomi-swatches" id="koyomi-swatches"></div>
+    <p class="koyomi-desc" id="koyomi-desc"></p>
+    <p class="koyomi-next" id="koyomi-next"></p>
+    <p class="note">※ 平年の目安です。天候により1〜2週間前後します。</p>
+  </section>
+
+  <section class="card gallery">
+    <p class="eyebrow">Field Notes</p>
+    <h2>美瑛のきろく</h2>
+    <p>スコアの元になっているのは、実際に美瑛の丘を歩いた記憶です。写真はすべて管理人が撮影したものです。</p>
+    <div class="gallery-grid">
+      <img src="photos/tiny-house.jpg" alt="美瑛の丘の上にぽつんと立つ赤い屋根の小屋と豆畑">
+      <img src="photos/tree.jpg" alt="快晴の空の下、丘の稜線に並ぶ白樺並木">
+      <img src="photos/flowers.jpg" alt="美瑛・丘の花畑に咲く赤いサルビアと縞模様の花列">
+    </div>
+    <p class="insta-link">もっと見る → <a href="https://www.instagram.com/biei_explorer/" rel="noopener">Instagram @biei_explorer</a></p>
+  </section>
+
+  <section class="card toolbox">
+    <p class="eyebrow">Lab</p>
+    <h2>つくりかけの道具箱</h2>
+    <p>美瑛のための小さなツールを、ひとつずつ増やしていきます。</p>
+    <ul>
+      <li><strong>空き家バンク・ウォッチ</strong> — 美瑛と周辺の空き家バンクに新着が出たら通知(準備中)</li>
+      <li><strong>見頃アラート</strong> — 青い池スコアが高い朝だけスマホに通知(準備中)</li>
+      <li><strong>畑を荒らさない撮影マップ</strong> — 立入禁止エリアを避けた撮影スポット案内(構想中)</li>
+    </ul>
+  </section>
+</main>
+
+<footer>
+  <p><a href="logic.html">スコアの仕組み(計算ロジック全公開)</a></p>
+  <p>気象データ: <a href="https://open-meteo.com/" rel="noopener">Open-Meteo</a>(白金青い池付近 標高約500m地点の予報値)</p>
+  <p>写真・運営: <a href="https://www.instagram.com/biei_explorer/" rel="noopener">@biei_explorer</a></p>
+  <p>このサイトは個人が運営する非公式の情報サイトです。スコアは気象条件からの推定であり、見え方・安全を保証しません。</p>
+</footer>
+
+<script src="app.js?v=5"></script>
+</body>
+</html>

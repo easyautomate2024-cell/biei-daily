@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>スコアの仕組み — 今日の美瑛</title>
+<meta name="description" content="「今日の美瑛」のスコア計算ロジックを全公開。青い池スコアと霧・雲海チャンスに使っている気象データ、加点・減点の内訳、限界と調整方針。">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a class="nav-logo" href="index.html">
+      <span class="logo-main">今日の美瑛</span>
+      <span class="logo-sub">BIEI DAILY</span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">今日のスコア</a>
+      <a href="https://www.instagram.com/biei_explorer/" rel="noopener" class="nav-cta">Instagram</a>
+    </div>
+  </div>
+</nav>
+<header class="hero small">
+  <p class="hero-eyebrow">Methodology</p>
+  <h1>スコアの仕組み</h1>
+  <p class="hero-sub">このサイトのスコアは、すべて計算式を公開しています</p>
+</header>
+
+<main>
+  <section class="card">
+    <p class="eyebrow">Data Source</p>
+    <h2>使っているデータ</h2>
+    <p>
+      <a href="https://open-meteo.com/" rel="noopener">Open-Meteo</a>(無料の気象予報API)から、
+      白金青い池付近(北緯43.489度・東経142.621度、標高約500m)の予報値を取得しています。
+      使う項目は次の6つだけです。
+    </p>
+    <ul>
+      <li><strong>雲量</strong>(1時間ごと・%)</li>
+      <li><strong>降水量</strong>(1時間ごと・mm)— 過去2日分も取得</li>
+      <li><strong>風速</strong>(1時間ごと)</li>
+      <li><strong>湿度・気温・露点</strong>(1時間ごと)</li>
+    </ul>
+    <p class="note">カメラやセンサーは使っていません。つまりこのスコアは「実際に見た色」ではなく「色が出やすい気象条件がどれだけ揃っているか」です。</p>
+  </section>
+
+  <section class="card">
+    <p class="eyebrow">Blue Pond Score</p>
+    <h2>青い池スコアの計算</h2>
+    <p>
+      青い池の青は、水中のアルミニウムを含む微粒子(コロイド)が太陽光を散乱して生まれます。
+      だから理屈の上で色を左右するのは<strong>「水の濁り」と「差し込む光の量」と「水面の穏やかさ」</strong>の3つ。
+      スコアはこの3要素を点数化したものです。
+    </p>
+    <p><strong>基準点 55点</strong>からスタートし、以下を加減算して0〜100に丸めます。</p>
+
+    <h3>1. 直近48時間の雨(濁り)— 最大の減点要因</h3>
+    <table class="logic-table">
+      <tr><th>直近2日の合計降水量</th><th>加減点</th><th>理由</th></tr>
+      <tr><td>30mm以上</td><td class="minus">−35</td><td rowspan="4">まとまった雨は川から濁った水を運び込み、青の源であるコロイドの見え方を壊します。「雨の翌日は白い」が定番のがっかりパターン</td></tr>
+      <tr><td>15〜30mm</td><td class="minus">−20</td></tr>
+      <tr><td>5〜15mm</td><td class="minus">−8</td></tr>
+      <tr><td>5mm未満</td><td class="plus">+5</td></tr>
+    </table>
+
+    <h3>2. 日中(9〜15時)の平均雲量(光)</h3>
+    <table class="logic-table">
+      <tr><th>平均雲量</th><th>加減点</th><th>理由</th></tr>
+      <tr><td>30%以下</td><td class="plus">+25</td><td rowspan="4">青は光の散乱現象なので、日差しが強いほど鮮やかに出ます。曇天では同じ水でも灰色がかって見えます</td></tr>
+      <tr><td>30〜60%</td><td class="plus">+10</td></tr>
+      <tr><td>60〜85%</td><td>±0</td></tr>
+      <tr><td>85%超</td><td class="minus">−10</td></tr>
+    </table>
+
+    <h3>3. 日中の平均風速(水面)</h3>
+    <table class="logic-table">
+      <tr><th>平均風速</th><th>加減点</th><th>理由</th></tr>
+      <tr><td>約6.9m/s以上</td><td class="minus">−12</td><td rowspan="3">風で水面が波立つと反射が乱れ、色がにごって見えます。立ち枯れの木の映り込みも消えます</td></tr>
+      <tr><td>約4.2〜6.9m/s</td><td class="minus">−6</td></tr>
+      <tr><td>約4.2m/s未満</td><td class="plus">+5</td></tr>
+    </table>
+
+    <h3>4. 今日の日中(6〜18時)の降水予報</h3>
+    <table class="logic-table">
+      <tr><th>予報降水量</th><th>加減点</th><th>理由</th></tr>
+      <tr><td>3mm以上</td><td class="minus">−10</td><td>見に行くその時間に雨だと、光も水面も条件が崩れるため</td></tr>
+    </table>
+
+    <h3>スコアと判定の対応</h3>
+    <table class="logic-table">
+      <tr><th>スコア</th><th>判定</th></tr>
+      <tr><td>80〜100</td><td>コバルトブルー期待</td></tr>
+      <tr><td>60〜79</td><td>青が見えそう</td></tr>
+      <tr><td>40〜59</td><td>五分五分</td></tr>
+      <tr><td>20〜39</td><td>白濁ぎみかも</td></tr>
+      <tr><td>0〜19</td><td>期待薄</td></tr>
+    </table>
+  </section>
+
+  <section class="card">
+    <p class="eyebrow">Morning Fog Forecast</p>
+    <h2>霧・雲海チャンスの計算</h2>
+    <p>
+      美瑛の丘の朝霧の多くは<strong>「放射冷却型」</strong>です。よく晴れた夜に地面の熱が逃げて空気が冷え、
+      湿った空気が飽和して霧になる——つまり<strong>「晴れた夜」「無風」「高い湿度」</strong>の3条件が揃った翌朝がチャンスです。
+      地元の写真家の経験則「翌日快晴の予報の朝、窓の外が真っ白なら丘へ急げ」を、そのまま点数にしています。
+    </p>
+    <p><strong>基準点 30点</strong>からスタートします(霧は「出ない日が普通」なので基準を低めにしています)。</p>
+
+    <h3>1. 夜間(今日21時〜明日3時)の平均雲量</h3>
+    <table class="logic-table">
+      <tr><th>平均雲量</th><th>加減点</th><th>理由</th></tr>
+      <tr><td>30%以下</td><td class="plus">+30</td><td rowspan="3">雲がないほど地表の熱が宇宙へ逃げ(放射冷却)、明け方に空気が冷えて霧が生まれます。曇った夜は冷え込まず、霧も出ません</td></tr>
+      <tr><td>30〜60%</td><td class="plus">+10</td></tr>
+      <tr><td>60%超</td><td class="minus">−20</td></tr>
+    </table>
+
+    <h3>2. 明け方(3〜6時)の平均風速</h3>
+    <table class="logic-table">
+      <tr><th>平均風速</th><th>加減点</th><th>理由</th></tr>
+      <tr><td>約1.9m/s以下</td><td class="plus">+20</td><td rowspan="3">霧は静けさの中に溜まります。風が吹くと霧は流されて消えるか、そもそも形成されません</td></tr>
+      <tr><td>約1.9〜4.2m/s</td><td class="plus">+5</td></tr>
+      <tr><td>約4.2m/s超</td><td class="minus">−15</td></tr>
+    </table>
+
+    <h3>3. 明け方の平均湿度</h3>
+    <table class="logic-table">
+      <tr><th>平均湿度</th><th>加減点</th><th>理由</th></tr>
+      <tr><td>95%以上</td><td class="plus">+25</td><td rowspan="4">湿度が飽和(100%)に近いほど、わずかな冷え込みで水蒸気が霧に変わります</td></tr>
+      <tr><td>88〜95%</td><td class="plus">+15</td></tr>
+      <tr><td>80〜88%</td><td class="plus">+5</td></tr>
+      <tr><td>80%未満</td><td class="minus">−10</td></tr>
+    </table>
+
+    <h3>4. 気温と露点の差(明け方)</h3>
+    <table class="logic-table">
+      <tr><th>気温 − 露点</th><th>加減点</th><th>理由</th></tr>
+      <tr><td>1.5℃以内</td><td class="plus">+10</td><td>露点は「その空気が飽和する温度」。気温が露点まで下がった瞬間に霧が発生するので、差が小さい=あと一歩の状態です</td></tr>
+    </table>
+
+    <h3>スコアと判定の対応</h3>
+    <table class="logic-table">
+      <tr><th>スコア</th><th>判定</th></tr>
+      <tr><td>75〜100</td><td>雲海チャンス大</td></tr>
+      <tr><td>55〜74</td><td>霧の可能性あり</td></tr>
+      <tr><td>35〜54</td><td>微妙なライン</td></tr>
+      <tr><td>0〜34</td><td>期待薄</td></tr>
+    </table>
+  </section>
+
+  <section class="card">
+    <p class="eyebrow">Limitations</p>
+    <h2>このスコアの限界</h2>
+    <ul>
+      <li><strong>1地点の予報値です</strong> — 美瑛は丘ごとに天気が変わる土地。青い池付近の予報が、あなたの立つ丘と同じとは限りません。</li>
+      <li><strong>水の中は見ていません</strong> — コロイドの状態や上流の工事・雪解けの影響は気象データに現れません。特に雪解け期(4〜5月)は緑がかることがあります。</li>
+      <li><strong>係数は育成中です</strong> — 各点数は気象の定石と地元写真家の経験則から置いた初期値で、実際の見え方と照らして継続的に調整しています。</li>
+    </ul>
+    <p>
+      だからこのサイトは「予報」ではなく<strong>「条件充足度スコア」</strong>と呼んでいます。
+      確実を期すなら、出発前に美瑛町観光協会のSNSで最新の現地写真を確認するのが最強です。
+    </p>
+  </section>
+
+  <section class="card">
+    <p class="eyebrow">Open Logic</p>
+    <h2>もっと詳しく</h2>
+    <p>
+      計算コードそのものは <code>app.js</code> にあり、このページの表と1対1で対応しています。
+      「ここの係数はおかしいのでは?」という指摘は大歓迎です — 的中率が上がるほど、このサイトは役に立つものになるので。
+    </p>
+    <p><a class="btn-link" href="index.html">← 今日のスコアを見る</a></p>
+  </section>
+</main>
+
+<footer>
+  <p>気象データ: <a href="https://open-meteo.com/" rel="noopener">Open-Meteo</a>(白金青い池付近 標高約500m地点の予報値)</p>
+  <p>このサイトは個人が運営する非公式の情報サイトです。スコアは気象条件からの推定であり、見え方・安全を保証しません。</p>
+</footer>
+</body>
+</html>
