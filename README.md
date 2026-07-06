@@ -19,12 +19,22 @@ python -m http.server 8080 --directory .
 
 → http://localhost:8080
 
-## 公開方法(無料)
+## 公開先
 
-- **Netlify Drop**: https://app.netlify.com/drop にこのフォルダをドラッグ&ドロップするだけ
-- **GitHub Pages**: リポジトリを作って Settings → Pages で公開
+- **本番**: https://easyautomate2024-cell.github.io/biei-daily/
+- リポジトリ: https://github.com/easyautomate2024-cell/biei-daily (GitHub Pages / main ブランチ直下)
 
-独自ドメイン(例: biei-〇〇.com)は年1,000〜2,000円で取得可能。
+### 更新方法
+
+ファイルを編集して push するだけ(数十秒で本番反映):
+
+```
+git add -A
+git commit -m "変更内容"
+git push
+```
+
+※ app.js を変更したときは index.html の `<script src="app.js?v=N">` の N を上げる(ブラウザキャッシュ対策)。
 
 ## スコアのロジック(app.js)
 
