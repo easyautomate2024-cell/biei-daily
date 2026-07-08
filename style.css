@@ -273,6 +273,11 @@ li.overdue { color: var(--minus); }
 .toolbox li { margin: 8px 0; font-size: 14.5px; color: var(--muted); }
 .toolbox li strong { color: var(--text); }
 
+/* ===== About ===== */
+.promise-list { margin: 10px 0 0; padding-left: 20px; }
+.promise-list li { margin: 8px 0; font-size: 14.5px; color: var(--muted); }
+.promise-list li strong { color: var(--text); }
+
 /* ===== テーブル（ロジックページ） ===== */
 .logic-table {
   width: 100%;
