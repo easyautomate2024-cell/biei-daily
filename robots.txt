@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://easyautomate2024-cell.github.io/biei-daily/sitemap.xml

@@ -28,6 +28,12 @@ function tokyoHour() {
   );
 }
 
+function shiftDateStr(dateStr, days) {
+  const d = new Date(`${dateStr}T00:00:00`);
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 // hourly 配列から「日付 + 時刻範囲」の値を取り出す
 function pick(hourly, key, dateStr, hFrom, hTo) {
   const out = [];
@@ -44,14 +50,20 @@ const sum = (a) => a.reduce((s, v) => s + v, 0);
 const clamp = (v) => Math.max(0, Math.min(100, Math.round(v)));
 
 // ── 青い池スコア ────────────────────────────────────────
-function pondScore(hourly, today) {
+// day: 評価対象日(今日または明日)。直近雨は対象日前の48時間で評価する。
+function pondScore(hourly, day) {
   let score = 55;
   const reasons = [];
 
-  // 直近48時間の降水（濁りの最大要因）
+  // 対象日直前48時間の降水（濁りの最大要因）
+  const winStart = shiftDateStr(day, -2) + "T00:00";
+  const winEnd = day + "T00:00";
   const rainHours = [];
   for (let i = 0; i < hourly.time.length; i++) {
-    if (hourly.time[i] < today + "T00:00") rainHours.push(hourly.precipitation[i]);
+    const t = hourly.time[i];
+    if (t >= winStart && t < winEnd && hourly.precipitation[i] !== null) {
+      rainHours.push(hourly.precipitation[i]);
+    }
   }
   const rain48 = sum(rainHours);
   if (rain48 >= 30) { score -= 35; reasons.push(["minus", `直近2日の雨 ${rain48.toFixed(0)}mm — 濁りやすい`]); }
@@ -60,7 +72,7 @@ function pondScore(hourly, today) {
   else { score += 5; reasons.push(["plus", "直近2日はほぼ雨なし"]); }
 
   // 日中(9〜15時)の雲量 — 光が入るほど青が映える
-  const cloud = avg(pick(hourly, "cloud_cover", today, 9, 15));
+  const cloud = avg(pick(hourly, "cloud_cover", day, 9, 15));
   if (cloud !== null) {
     if (cloud <= 30) { score += 25; reasons.push(["plus", `日中の雲量 ${cloud.toFixed(0)}% — 光たっぷり`]); }
     else if (cloud <= 60) { score += 10; reasons.push(["plus", `日中の雲量 ${cloud.toFixed(0)}%`]); }
@@ -69,16 +81,16 @@ function pondScore(hourly, today) {
   }
 
   // 日中の風 — 水面が波立つと色がにごって見える
-  const wind = avg(pick(hourly, "wind_speed_10m", today, 9, 15)); // km/h
+  const wind = avg(pick(hourly, "wind_speed_10m", day, 9, 15)); // km/h
   if (wind !== null) {
     if (wind >= 25) { score -= 12; reasons.push(["minus", `風 ${(wind / 3.6).toFixed(1)}m/s — 水面が波立つ`]); }
     else if (wind >= 15) { score -= 6; reasons.push(["", `風 ${(wind / 3.6).toFixed(1)}m/s`]); }
     else { score += 5; reasons.push(["plus", `風 ${(wind / 3.6).toFixed(1)}m/s — 水面おだやか`]); }
   }
 
-  // 今日の降水予報
-  const rainToday = sum(pick(hourly, "precipitation", today, 6, 18));
-  if (rainToday >= 3) { score -= 10; reasons.push(["minus", `今日の日中に雨予報 ${rainToday.toFixed(0)}mm`]); }
+  // 対象日の降水予報
+  const rainDay = sum(pick(hourly, "precipitation", day, 6, 18));
+  if (rainDay >= 3) { score -= 10; reasons.push(["minus", `日中に雨予報 ${rainDay.toFixed(0)}mm`]); }
 
   return { score: clamp(score), reasons };
 }
@@ -88,7 +100,7 @@ function pondVerdict(s) {
   if (s >= 60) return ["青が見えそう", "晴れ間のタイミングを狙えば十分楽しめそうです。"];
   if (s >= 40) return ["五分五分", "時間帯しだい。現地のSNS最新投稿も合わせて確認を。"];
   if (s >= 20) return ["白濁ぎみかも", "雨後の濁りや厚い雲の影響が出ていそうです。"];
-  return ["期待薄", "今日は無理せず、丘の風景や美術館プランがおすすめ。"];
+  return ["期待薄", "無理せず、丘の風景や美術館プランもおすすめ。"];
 }
 
 // ── 霧・雲海チャンス（明朝・放射冷却型） ────────────────
@@ -464,7 +476,16 @@ async function main() {
     document.getElementById("now-wind").textContent = `風 ${(hourly.wind_speed_10m[nowIdx] / 3.6).toFixed(1)}m/s`;
   }
 
-  const pond = pondScore(hourly, today);
+  // 17時以降は「明日の見込み」に切り替える(旅行前夜のユーザー向け)
+  const eveningMode = tokyoHour() >= 17;
+  const pondDay = eveningMode ? tomorrow : today;
+  if (eveningMode) {
+    document.getElementById("pond-title").textContent =
+      `明日(${Number(tomorrow.slice(5, 7))}/${Number(tomorrow.slice(8, 10))})の青い池スコア`;
+    document.getElementById("pond-mode").textContent = "🌙 今夜の時点での明日の見込みです";
+    document.getElementById("pond-mode").classList.remove("hidden");
+  }
+  const pond = pondScore(hourly, pondDay);
   renderScore("pond", pond.score, pondVerdict, pond.reasons);
 
   const fog = fogScore(hourly, today, tomorrow);
