@@ -281,6 +281,7 @@ li.overdue { color: var(--minus); }
 .toolbox li strong { color: var(--text); }
 
 /* ===== About ===== */
+.card-photo.about-photo { object-position: center 35%; }
 .promise-list { margin: 10px 0 0; padding-left: 20px; }
 .promise-list li { margin: 8px 0; font-size: 14.5px; color: var(--muted); }
 .promise-list li strong { color: var(--text); }
