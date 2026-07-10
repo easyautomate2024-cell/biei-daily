@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>直売所の歩き方 — 今日の美瑛</title>
+<meta name="description" content="美瑛の丘でふいに出会う無人販売所。その仕組みとお作法七ヶ条、季節ごとに並ぶもの、そして確実に買える公式直売スポットの地図。美瑛の恵みは、畑ではなく直売所で。">
+<link rel="canonical" href="https://easyautomate2024-cell.github.io/biei-daily/map.html">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta property="og:title" content="直売所の歩き方 — 今日の美瑛">
+<meta property="og:description" content="美瑛の丘でふいに出会う無人販売所。その仕組みとお作法、季節ごとに並ぶもの。買うことが、いちばんの応援です。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://easyautomate2024-cell.github.io/biei-daily/map.html">
+<meta property="og:image" content="https://easyautomate2024-cell.github.io/biei-daily/og-image.jpg">
+<meta property="og:site_name" content="今日の美瑛">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2DT79T20E6"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2DT79T20E6');
+</script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="style.css">
+<style>
+/* map.html 専用スタイル(共有CSSは変更しない) */
+#stand-map {
+  height: 400px;
+  border-radius: 12px;
+  border: 1px solid var(--border2);
+  z-index: 0;
+}
+.map-legend { display: flex; gap: 14px; margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+.legend-dot {
+  display: inline-block; width: 11px; height: 11px; border-radius: 50%;
+  margin-right: 5px; vertical-align: -1px;
+}
+.stand-item { border-top: 1px solid var(--border); padding: 14px 0 12px; }
+.stand-item:first-of-type { border-top: none; }
+.stand-name { font-weight: 700; font-size: 15.5px; }
+.stand-type {
+  display: inline-block; font-size: 11px; font-weight: 700;
+  border-radius: 980px; padding: 2px 10px; margin-left: 8px; vertical-align: 1px;
+}
+.stand-type.ja { background: #e9f6ef; color: #1a7f4e; }
+.stand-type.michi { background: #eef4fb; color: #1c6ea4; }
+.stand-meta { font-size: 13px; color: var(--muted); margin-top: 3px; }
+.stand-note { font-size: 13.5px; color: var(--muted); margin-top: 6px; }
+.stand-link { font-size: 12.5px; }
+.stand-link a { color: var(--accent); text-decoration: none; }
+.stand-link a:hover { text-decoration: underline; }
+.shun-list { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.shun-list li {
+  background: #fdf8ec; border: 1px solid rgba(217, 152, 42, 0.25); color: #8a6215;
+  border-radius: 980px; padding: 5px 14px; font-size: 13px; font-weight: 500;
+}
+.manner-list { margin: 14px 0 0; padding: 0; list-style: none; counter-reset: manner; }
+.manner-list li {
+  counter-increment: manner;
+  position: relative;
+  padding: 12px 0 12px 46px;
+  border-top: 1px solid var(--border);
+  font-size: 14.5px; color: var(--muted);
+}
+.manner-list li:first-child { border-top: none; }
+.manner-list li::before {
+  content: counter(manner);
+  position: absolute; left: 0; top: 12px;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px; color: var(--accent);
+}
+.manner-list li strong { color: var(--text); }
+.philosophy {
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 18px 22px;
+  margin-top: 16px;
+  font-size: 14.5px;
+  color: var(--muted);
+}
+.philosophy strong { color: var(--text); }
+.season-note { margin-top: 14px; font-size: 14.5px; }
+.leaflet-popup-content { font-size: 13px; line-height: 1.55; }
+.leaflet-popup-content b { font-size: 14px; }
+</style>
+</head>
+<body>
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a class="nav-logo" href="index.html">
+      <span class="logo-main">今日の美瑛</span>
+      <span class="logo-sub">BIEI DAILY</span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">今日のスコア</a>
+      <a href="logic.html">スコアの仕組み</a>
+      <a href="about.html">About</a>
+      <a href="https://www.instagram.com/biei_explorer/" rel="noopener" class="nav-cta">Instagram</a>
+    </div>
+  </div>
+</nav>
+<header class="hero small">
+  <p class="hero-eyebrow">Field Guide</p>
+  <h1>直売所の歩き方</h1>
+  <p class="hero-sub">美瑛の恵みは、畑ではなく直売所で。買うことが、いちばんの応援です</p>
+</header>
+
+<main>
+  <section class="card">
+    <p class="eyebrow">Unmanned Stands</p>
+    <h2>丘のどこかで、ふいに出会う</h2>
+    <p>
+      美瑛の農道や坂の途中には、小さな販売台がぽつんと置かれていることがあります。
+      朝採れの野菜と、手書きの値札と、料金箱。<strong>番人はいません。</strong>
+      お金を入れて、品物を持っていく——それだけの、信頼で回っている仕組みです。
+    </p>
+    <p>
+      初めて見ると少し戸惑いますが、これは丘の暮らしのごく日常的な風景。
+      スーパーより新鮮で、作った人の顔が(会えれば)見えて、
+      売上はそのまま畑の人に届きます。私たち家族も滞在中、何度か足を止めました。
+      <strong>旅行者が美瑛の農業に参加できる、いちばん小さくて確かな方法</strong>だと思っています。
+    </p>
+    <div class="philosophy">
+      <strong>このサイトが無人販売所の場所を載せない理由。</strong>
+      無人販売所は、静かな暮らしの軒先にあります。地図に載せて人が押し寄せたら、
+      信頼で回る仕組みそのものが壊れてしまう。だからここでは場所ではなく<strong>作法</strong>を伝えます。
+      探して行く場所ではなく、丘を走っていて<strong>出会うもの</strong>。その偶然も、美瑛の楽しみのうちです。
+    </div>
+  </section>
+
+  <section class="card">
+    <p class="eyebrow">Manner</p>
+    <h2>お作法 七ヶ条</h2>
+    <ol class="manner-list">
+      <li><strong>小銭を用意しておく。</strong>100円玉を多めに。両替はできず、おつりも基本ありません</li>
+      <li><strong>袋を持参する。</strong>泥付き野菜がそのまま置かれていることも多いです</li>
+      <li><strong>午前中がいちばん。</strong>朝採れが並ぶのは朝のうち。夕方は空っぽでも、それは今日が良い日だった証拠</li>
+      <li><strong>売り切れ御免を楽しむ。</strong>「あるものを買う」のが無人販売所。お目当てと違っても、それが今日の丘の実り</li>
+      <li><strong>車は農作業の邪魔にならない場所へ。</strong>トラクターや軽トラが通ります。畑への進入路は絶対にふさがない</li>
+      <li><strong>写真はお家や人が写らない範囲で。</strong>販売台は撮っても、暮らしは撮らない</li>
+      <li><strong>家の方に会えたら、ひとこと挨拶を。</strong>「おいしかったです」は、お金と同じくらい嬉しいチップです</li>
+    </ol>
+  </section>
+
+  <section class="card">
+    <p class="eyebrow">In Season</p>
+    <h2>何に出会える?</h2>
+    <p id="shun-period">--</p>
+    <ul class="shun-list" id="shun-list"></ul>
+    <p class="season-note">
+      春はアスパラ、夏はとうきびやトマト、秋はじゃがいもとかぼちゃ——台の上は丘の色ごよみと同じ速さで移ろいます。
+      切り花や卵に出会えることも。<strong>何が並ぶかは、その日の畑しだい</strong>です。
+    </p>
+    <p class="note">※ 平年の目安です。天候・入荷状況により異なります。</p>
+  </section>
+
+  <section class="card">
+    <p class="eyebrow">Official Spots</p>
+    <h2>確実に買いたい日は、ここへ</h2>
+    <p>
+      出会いは運まかせ。でも「今日どうしても美瑛の野菜を買って帰りたい」という日は、
+      公に案内されている直売施設へ。品揃えも支払い(現金以外も可)も安心です。
+    </p>
+    <div id="stand-map"></div>
+    <div class="map-legend">
+      <span><span class="legend-dot" style="background:#1a7f4e"></span>JA直売所</span>
+      <span><span class="legend-dot" style="background:#1c6ea4"></span>道の駅</span>
+    </div>
+    <div id="stand-list"></div>
+    <p class="note">※ 公に案内されている施設のみ掲載しています。営業時間は季節で変わるため、最終確認日(<span id="checked-date">--</span>)以降に変更されている可能性があります。</p>
+  </section>
+
+  <section class="card">
+    <p class="eyebrow">Contribute</p>
+    <h2>情報募集</h2>
+    <p>
+      「この公式スポットも載せてほしい」「営業時間が変わっていた」「無人販売所でこんな作法を教わった」——
+      そんな情報は Instagram <a href="https://www.instagram.com/biei_explorer/" rel="noopener">@biei_explorer</a> のDMへ。
+      無人販売所については<strong>場所は掲載しません</strong>が、体験談やお作法は、このページを育てる材料になります。
+    </p>
+  </section>
+</main>
+
+<footer>
+  <p><a href="logic.html">スコアの仕組み(計算ロジック全公開)</a></p>
+  <p>地図: <a href="https://leafletjs.com/" rel="noopener">Leaflet</a> / 地理院タイル(<a href="https://maps.gsi.go.jp/development/ichiran.html" rel="noopener">国土地理院</a>)</p>
+  <p>写真・運営: <a href="https://www.instagram.com/biei_explorer/" rel="noopener">@biei_explorer</a></p>
+  <p>このサイトは個人が運営する非公式の情報サイトです。</p>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ── 旬の売り物(平年の目安・月別) ──────────────────────
+const SHUN = {
+  1: ["雪室越冬じゃがいも", "米・小麦製品", "農産加工品(選果市場は通年営業)"],
+  2: ["雪室越冬じゃがいも", "米・小麦製品", "農産加工品(選果市場は通年営業)"],
+  3: ["雪室越冬じゃがいも(甘みのピーク)", "米・小麦製品", "農産加工品"],
+  4: ["越冬じゃがいも", "山菜(走り)", "米・加工品"],
+  5: ["グリーンアスパラ(最盛期)", "山菜", "越冬じゃがいも"],
+  6: ["グリーンアスパラ(終盤)", "いちご", "朝採りレタス・青菜"],
+  7: ["朝採り野菜(ズッキーニ・ブロッコリー)", "新じゃが(走り)", "メロン(下旬〜)"],
+  8: ["スイートコーン(最盛期)", "メロン", "トマト・枝豆"],
+  9: ["じゃがいも(男爵・きたあかり等)", "かぼちゃ", "玉ねぎ"],
+  10: ["じゃがいも・かぼちゃ", "豆類", "新米"],
+  11: ["貯蔵じゃがいも・かぼちゃ", "米・小麦製品", "加工品"],
+  12: ["雪室越冬じゃがいも", "米・小麦製品", "農産加工品(選果市場は通年営業)"],
+};
+
+function tokyoMonth() {
+  return Number(
+    new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Tokyo", month: "2-digit" }).format(new Date())
+  );
+}
+
+async function main() {
+  // 旬
+  const m = tokyoMonth();
+  document.getElementById("shun-period").textContent = `${m}月の台の上・店先には、こんなものが並びます:`;
+  const ul = document.getElementById("shun-list");
+  for (const item of SHUN[m]) {
+    const li = document.createElement("li");
+    li.textContent = item;
+    ul.appendChild(li);
+  }
+
+  // 公式スポット地図
+  const map = L.map("stand-map", { scrollWheelZoom: false });
+  L.tileLayer("https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png", {
+    attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html">地理院タイル</a>',
+    maxZoom: 18,
+  }).addTo(map);
+
+  const res = await fetch("data/stands.json");
+  const data = await res.json();
+  document.getElementById("checked-date").textContent = data.updated;
+
+  const colors = { "JA直売所": "#1a7f4e", "道の駅": "#1c6ea4" };
+  const bounds = [];
+  const listEl = document.getElementById("stand-list");
+
+  for (const s of data.stands) {
+    bounds.push([s.lat, s.lon]);
+    const gmap = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name + " 美瑛町")}`;
+
+    L.circleMarker([s.lat, s.lon], {
+      radius: 9,
+      color: "#ffffff",
+      weight: 2,
+      fillColor: colors[s.type] || "#6e6e73",
+      fillOpacity: 0.95,
+    })
+      .addTo(map)
+      .bindPopup(
+        `<b>${s.name}</b><br>${s.address}<br>🕐 ${s.hours}<br>` +
+        `<a href="${gmap}" target="_blank" rel="noopener">Googleマップで開く</a>`
+      );
+
+    const typeClass = s.type === "JA直売所" ? "ja" : "michi";
+    const item = document.createElement("div");
+    item.className = "stand-item";
+    item.innerHTML =
+      `<div class="stand-name">${s.name}<span class="stand-type ${typeClass}">${s.type}</span></div>` +
+      `<div class="stand-meta">📍 ${s.address} ／ 🕐 ${s.hours}</div>` +
+      `<div class="stand-note">${s.note}</div>` +
+      `<div class="stand-link"><a href="${gmap}" target="_blank" rel="noopener">Googleマップで開く →</a></div>`;
+    listEl.appendChild(item);
+  }
+  map.fitBounds(bounds, { padding: [40, 40] });
+}
+
+main();
+</script>
+</body>
+</html>
