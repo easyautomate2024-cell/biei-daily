@@ -236,6 +236,7 @@ li.overdue { color: var(--minus); }
 .koyomi-next { margin-top: 12px; font-size: 13px !important; color: var(--accent) !important; font-weight: 600; }
 
 /* ===== 麦秋メーター ===== */
+.card-photo.wheat-photo { object-position: center 80%; }
 .bakushu-status { font-size: 13px !important; color: var(--muted); }
 .bakushu-bar {
   height: 14px;
