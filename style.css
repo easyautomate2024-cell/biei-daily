@@ -36,7 +36,7 @@ nav.site-nav {
   max-width: 1000px; margin: 0 auto; height: 56px;
   display: flex; align-items: center; justify-content: space-between;
 }
-.nav-logo { text-decoration: none; line-height: 1.15; }
+.nav-logo { text-decoration: none; line-height: 1.15; white-space: nowrap; flex-shrink: 0; }
 .nav-logo .logo-main { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: 2px; display: block; }
 .nav-logo .logo-sub { font-size: 9px; font-weight: 500; color: var(--muted); letter-spacing: 4px; display: block; }
 .nav-links { display: flex; align-items: center; gap: 22px; }
