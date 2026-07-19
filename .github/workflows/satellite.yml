@@ -1,0 +1,37 @@
+name: 衛星画像の自動更新
+
+on:
+  schedule:
+    - cron: "20 0 * * *"   # 毎日 09:20 JST
+  workflow_dispatch: {}     # 手動実行も可
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 依存ライブラリ
+        run: pip install --quiet rasterio pillow numpy
+
+      - name: 衛星画像を更新
+        run: python scripts/update_satellite.py
+
+      - name: 変更があればコミット
+        run: |
+          if ! git diff --quiet; then
+            git config user.name "biei-daily-bot"
+            git config user.email "easy.automate2024@gmail.com"
+            git add photos/sat data/satellite.json
+            git commit -m "衛星画像を自動更新"
+            git push
+          else
+            echo "変更なし"
+          fi

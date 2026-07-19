@@ -25,7 +25,7 @@
   gtag('js', new Date());
   gtag('config', 'G-2DT79T20E6');
 </script>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 <nav class="site-nav">
@@ -37,6 +37,7 @@
     <div class="nav-links">
       <a href="logic.html">スコアの仕組み</a>
       <a href="map.html">直売所</a>
+      <a href="satellite.html">衛星</a>
       <a href="about.html">About</a>
       <a href="https://www.instagram.com/biei_explorer/" rel="noopener" class="nav-cta">Instagram</a>
     </div>
@@ -95,6 +96,14 @@
     </article>
   </section>
 
+  <a class="card sat-teaser" href="satellite.html">
+    <img class="card-photo" id="sat-teaser-img" src="photos/sat/sat-hills.jpg" width="660" height="789" loading="lazy" alt="衛星から見た美瑛のパッチワーク">
+    <p class="eyebrow">Satellite View</p>
+    <h2>衛星が見た美瑛</h2>
+    <p class="sat-teaser-desc">宇宙から見た、いまのパッチワーク。10m解像度で畑の一枚一枚が見えます。</p>
+    <p class="sat-teaser-meta"><span id="sat-teaser-date">最新の晴れた撮影日を表示</span> → 画像を見る</p>
+  </a>
+
   <section class="card sun-card">
     <img class="card-photo wide" src="photos/fog-hills3.jpg" width="1600" height="1069" loading="lazy" alt="十勝岳連峰と雲海の上に昇る朝日">
     <p class="eyebrow">Sun Timetable</p>
@@ -147,11 +156,11 @@
   <section class="card toolbox">
     <p class="eyebrow">Lab</p>
     <h2>つくりかけの道具箱</h2>
-    <p>次のテーマは「宇宙から見る美瑛」。衛星データの機能を準備しています。</p>
+    <p>テーマは「宇宙から見る美瑛」。衛星データの機能を育てています。</p>
     <ul>
-      <li><strong>衛星が見た今週の丘</strong> — 観測衛星Sentinel-2(10m解像度・約5日ごと)の最新画像で、丘の色ごよみと麦秋メーターの「実際のところ」を答え合わせ(準備中)</li>
-      <li><strong>青い池の色、宇宙から</strong> — 衛星画素から池の色を記録して、青い池スコアの的中を検証(構想中)</li>
-      <li><strong>雪どこまで?マップ</strong> — NASAの衛星データで「美瑛はもう白いか」に答える冬のコンテンツ(構想中)</li>
+      <li><strong><a href="satellite.html">衛星が見た美瑛</a></strong> — 最新の晴れた撮影日を自動で選んで、宇宙からのパッチワークを表示(公開中)</li>
+      <li><strong>この丘、去年は何色?</strong> — 同じ丘の年次比較で輪作を「見せる」(準備中)</li>
+      <li><strong>雪どこまで?マップ</strong> — 「美瑛はもう白いか」に答える冬のコンテンツ(構想中)</li>
     </ul>
   </section>
 </main>
@@ -163,6 +172,6 @@
   <p>このサイトは個人が運営する非公式の情報サイトです。スコアは気象条件からの推定であり、見え方・安全を保証しません。</p>
 </footer>
 
-<script src="app.js?v=9"></script>
+<script src="app.js?v=11"></script>
 </body>
 </html>

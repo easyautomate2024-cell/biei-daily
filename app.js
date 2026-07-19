@@ -448,10 +448,24 @@ async function loadVolcano() {
   }
 }
 
+// ── 衛星カードの撮影日表示 ──────────────────────────────
+async function loadSatTeaser() {
+  try {
+    const res = await fetch("data/satellite.json");
+    if (!res.ok) return;
+    const meta = await res.json();
+    const d = meta.date;
+    document.getElementById("sat-teaser-date").textContent =
+      `撮影日 ${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}(最新の晴れた日)`;
+    document.getElementById("sat-teaser-img").src = `photos/sat/sat-hills.jpg?d=${d}`;
+  } catch (e) { /* 失敗時は既定文言のまま */ }
+}
+
 async function main() {
   renderKoyomi();
   loadVolcano();
   loadBakushu();
+  loadSatTeaser();
   const today = tokyoDateStr();
   const tomorrow = tokyoDateStr(1);
   document.getElementById("today-date").textContent = `（${today}）`;

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>衛星が見た美瑛 — 今日の美瑛</title>
+<meta name="description" content="観測衛星Sentinel-2が撮影した最新の美瑛のパッチワーク(10m解像度)。毎日自動チェックし、新しい晴れた撮影があった日だけ画像が更新されます。">
+<link rel="canonical" href="https://easyautomate2024-cell.github.io/biei-daily/satellite.html">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta property="og:title" content="衛星が見た美瑛 — 今日の美瑛">
+<meta property="og:description" content="宇宙から見た美瑛のパッチワーク(10m解像度)。最新の晴れた撮影日を自動選択して毎日更新チェック。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://easyautomate2024-cell.github.io/biei-daily/satellite.html">
+<meta property="og:image" content="https://easyautomate2024-cell.github.io/biei-daily/og-image.jpg">
+<meta property="og:site_name" content="今日の美瑛">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2DT79T20E6"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2DT79T20E6');
+</script>
+<link rel="stylesheet" href="style.css?v=4">
+<style>
+/* satellite.html 専用スタイル(共有CSSは変更しない) */
+.sat-status {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.sat-current { font-size: 15px; font-weight: 700; }
+.sat-badge {
+  font-size: 12px; font-weight: 700;
+  border-radius: 980px; padding: 3px 12px;
+  background: #e9f6ef; color: #1a7f4e;
+}
+.sat-img {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--border2);
+  display: block;
+}
+.sat-caption { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+.sat-note-list { margin: 10px 0 0; padding-left: 20px; }
+.sat-note-list li { margin: 7px 0; font-size: 14.5px; color: var(--muted); }
+.sat-note-list li strong { color: var(--text); }
+</style>
+</head>
+<body>
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a class="nav-logo" href="index.html">
+      <span class="logo-main">今日の美瑛</span>
+      <span class="logo-sub">BIEI DAILY</span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">今日のスコア</a>
+      <a href="map.html">直売所</a>
+      <a href="about.html">About</a>
+      <a href="https://www.instagram.com/biei_explorer/" rel="noopener" class="nav-cta">Instagram</a>
+    </div>
+  </div>
+</nav>
+<header class="hero small">
+  <p class="hero-eyebrow">Satellite View</p>
+  <h1>衛星が見た美瑛</h1>
+  <p class="hero-sub">宇宙から見る、いちばん新しい晴れた日のパッチワーク</p>
+</header>
+
+<main>
+  <section class="card">
+    <p class="eyebrow">Latest Clear Image</p>
+    <h2>丘と市街(定番の構図)</h2>
+    <div class="sat-status">
+      <span class="sat-current" id="sat-date">撮影日を読み込み中…</span>
+      <span class="sat-badge hidden" id="sat-badge"></span>
+    </div>
+    <img class="sat-img" id="img-hills" src="photos/sat/sat-hills.jpg" alt="衛星から見た美瑛の丘と市街地(10m解像度)。畑のパッチワークと町並み">
+    <p class="sat-caption">上が北。中央上の白い集まりが美瑛の市街地、ベージュ〜金色の区画は色づいた麦畑、緑はビート・豆・じゃがいもなど。10m解像度(1ピクセル=10m四方)。</p>
+  </section>
+
+  <section class="card">
+    <p class="eyebrow">Wide Area</p>
+    <h2>美瑛全域(広域)</h2>
+    <img class="sat-img" id="img-wide" src="photos/sat/sat-wide.jpg" loading="lazy" width="1400" height="1484" alt="衛星から見た美瑛全域(10m解像度)の広域画像">
+    <p class="sat-caption">丘陵のうねりに沿って畑が並ぶ様子。「丘のまち」の地形が宇宙からだとよく分かります。</p>
+  </section>
+
+  <section class="card">
+    <p class="eyebrow">How It Works</p>
+    <h2>この画像のしくみ</h2>
+    <ul class="sat-note-list">
+      <li><strong>観測衛星Sentinel-2(ESA)の10m解像度データ</strong>を使っています。美瑛の畑1枚がはっきり見える細かさです</li>
+      <li>衛星が美瑛上空を撮るのは<strong>2〜5日に一度</strong>。さらに雲の日もあるため、このサイトは<strong>毎朝自動で新しい撮影をチェックし、晴れた撮影があった日だけ画像を差し替えます</strong>。画像の下の撮影日が「いま表示している美瑛」の日付です</li>
+      <li>Googleマップの航空写真より粗いのは事実です。そのかわり、あちらは「数年前のいつか」、こちらは<strong>「先週の美瑛」</strong>——鮮度が取り柄です。麦の色づきや雪の到来など、丘の「いま」はこちらにしか写りません</li>
+      <li>「丘の色ごよみ」や麦秋メーターの実写版としてどうぞ。次の楽しみ: 同じ場所の去年の画像と並べる「この丘、去年は何色?」を準備中です</li>
+    </ul>
+    <p class="note">データ出典: <a href="https://registry.opendata.aws/sentinel-2-l2a-cogs/" rel="noopener">Sentinel-2 L2A(ESA / AWS Open Data)</a>。画像は毎日の自動処理(GitHub Actions)で生成しています。</p>
+  </section>
+</main>
+
+<footer>
+  <p><a href="logic.html">スコアの仕組み(計算ロジック全公開)</a></p>
+  <p>衛星画像: Sentinel-2(ESA)/ AWS Open Data</p>
+  <p>写真・運営: <a href="https://www.instagram.com/biei_explorer/" rel="noopener">@biei_explorer</a></p>
+  <p>このサイトは個人が運営する非公式の情報サイトです。</p>
+</footer>
+
+<script>
+(async () => {
+  try {
+    const res = await fetch("data/satellite.json?nc=" + Date.now());
+    const meta = await res.json();
+    const d = meta.date;
+    document.getElementById("sat-date").textContent =
+      `撮影日: ${Number(d.slice(5, 7))}月${Number(d.slice(8, 10))}日(${d.slice(0, 4)}年)`;
+    const badge = document.getElementById("sat-badge");
+    badge.textContent = "🛰 最新の晴れた撮影日";
+    badge.classList.remove("hidden");
+    // 画像のキャッシュを撮影日で無効化
+    document.getElementById("img-hills").src = `photos/sat/sat-hills.jpg?d=${d}`;
+    document.getElementById("img-wide").src = `photos/sat/sat-wide.jpg?d=${d}`;
+  } catch (e) {
+    document.getElementById("sat-date").textContent = "撮影日情報を取得できませんでした";
+  }
+})();
+</script>
+</body>
+</html>

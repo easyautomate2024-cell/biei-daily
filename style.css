@@ -257,6 +257,15 @@ li.overdue { color: var(--minus); }
 .bakushu-pred { margin-top: 12px; font-size: 16px !important; font-weight: 700; color: var(--text) !important; }
 .bakushu-stage { font-size: 13px !important; color: var(--accent) !important; font-weight: 600; margin-top: 2px; }
 
+/* ===== 衛星ページ誘導カード ===== */
+a.sat-teaser {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+.sat-teaser-desc { font-size: 14px; margin-bottom: 8px; }
+.sat-teaser-meta { font-size: 13px !important; color: var(--accent) !important; font-weight: 600; }
+
 /* ===== ギャラリー ===== */
 .gallery-grid {
   display: grid;
@@ -357,7 +366,8 @@ footer a { color: var(--muted); text-decoration: underline; }
 footer a:hover { color: var(--text); }
 
 @media (max-width: 600px) {
-  .nav-links { gap: 14px; }
+  .nav-inner { height: auto; min-height: 56px; padding: 8px 0; flex-wrap: wrap; gap: 4px 12px; }
+  .nav-links { gap: 4px 14px; flex-wrap: wrap; }
   .nav-links a:not(.nav-cta) { font-size: 13px; }
   .hero { padding: 64px 18px 56px; }
   main { padding: 28px 14px 64px; }
