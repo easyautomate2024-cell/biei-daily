@@ -38,6 +38,53 @@
   border-radius: 980px; padding: 3px 12px;
   background: #e9f6ef; color: #1a7f4e;
 }
+.sat-badge.waiting { background: #fdf0e3; color: #a8601c; }
+
+/* 状況パネル */
+.sat-state {
+  border: 1px solid var(--border2);
+  border-left: 3px solid #1a7f4e;
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-bottom: 18px;
+  background: var(--bg);
+}
+.sat-state.waiting { border-left-color: #d08a3c; }
+.sat-state-head {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.sat-state-title { font-size: 15px; font-weight: 700; }
+.sat-state p { font-size: 14px; color: var(--muted); margin: 0; line-height: 1.7; }
+.sat-state p + p { margin-top: 6px; }
+.sat-state b { color: var(--text); }
+.sat-checked { font-size: 12px; color: var(--muted); margin-top: 10px !important; }
+
+/* 通過記録 */
+.pass-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 14px;
+  margin: 4px 0 0;
+}
+.pass-item { min-width: 0; }
+.pass-item img {
+  width: 100%; height: auto; display: block;
+  border-radius: 8px; border: 1px solid var(--border2);
+  background: #f0f0f2;
+}
+.pass-item.used img { border-color: #1a7f4e; box-shadow: 0 0 0 1px #1a7f4e; }
+.pass-item .pass-date {
+  font-size: 13px; font-weight: 700; margin: 8px 0 2px; color: var(--text);
+}
+.pass-item .pass-verdict {
+  font-size: 11.5px; font-weight: 700; margin: 0; color: #a8601c;
+}
+.pass-item.used .pass-verdict { color: #1a7f4e; }
+.pass-item .pass-num {
+  font-size: 11.5px; color: var(--muted); margin: 2px 0 0;
+  font-variant-numeric: tabular-nums;
+}
 .sat-img {
   width: 100%;
   height: auto;
@@ -76,12 +123,30 @@
   <section class="card">
     <p class="eyebrow">Latest Clear Image</p>
     <h2>丘と市街(定番の構図)</h2>
+
+    <div class="sat-state" id="sat-state">
+      <div class="sat-state-head">
+        <span class="sat-state-title" id="sat-state-title">状況を読み込み中…</span>
+        <span class="sat-badge hidden" id="sat-badge"></span>
+      </div>
+      <p id="sat-state-desc"></p>
+      <p id="sat-state-next"></p>
+      <p class="sat-checked" id="sat-checked"></p>
+    </div>
+
     <div class="sat-status">
       <span class="sat-current" id="sat-date">撮影日を読み込み中…</span>
-      <span class="sat-badge hidden" id="sat-badge"></span>
     </div>
     <img class="sat-img" id="img-hills" src="photos/sat/sat-hills.jpg" alt="衛星から見た美瑛の丘と市街地(10m解像度)。畑のパッチワークと町並み">
     <p class="sat-caption">上が北。中央上の白い集まりが美瑛の市街地、ベージュ〜金色の区画は色づいた麦畑、緑はビート・豆・じゃがいもなど。10m解像度(1ピクセル=10m四方)。</p>
+  </section>
+
+  <section class="card">
+    <p class="eyebrow">Pass Log</p>
+    <h2>衛星の通過記録</h2>
+    <p class="sat-caption" style="margin: 0 0 16px;">衛星が美瑛の上空を通った直近5回です。雲で見送った日も、実際に撮れた画像をそのまま載せています。「更新が止まっている」のではなく「晴れを待っている」ことが、ご自身の目で確かめられます。</p>
+    <div class="pass-grid" id="pass-grid"></div>
+    <p class="sat-caption" id="pass-note">読み込み中…</p>
   </section>
 
   <section class="card">
@@ -112,21 +177,101 @@
 </footer>
 
 <script>
+const REVISIT_DAYS = 5;   // 美瑛上空の通過はおよそ5日おき
+
+const md = (s) => `${Number(s.slice(5, 7))}/${Number(s.slice(8, 10))}`;
+const toDate = (s) => new Date(s + "T00:00:00Z");
+const daysBetween = (a, b) => Math.round((b - a) / 86400000);
+const todayUTC = () => toDate(new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10));
+
+function nextPassLabel(passes, today) {
+  // 各通過の5日後のうち、今日以降でいちばん早い日を次のチャンスとする
+  const cands = passes
+    .map((p) => new Date(toDate(p.date).getTime() + REVISIT_DAYS * 86400000))
+    .filter((d) => d >= today)
+    .sort((a, b) => a - b);
+  if (!cands.length) return "次の通過はまもなくです。";
+  const n = cands[0];
+  const iso = n.toISOString().slice(0, 10);
+  const diff = daysBetween(today, n);
+  if (diff <= 0) return "次に美瑛の上空を通るのは<b>今日ごろ</b>です。晴れていれば、明日には画像が入れ替わります。";
+  return `次に美瑛の上空を通るのは<b>${md(iso)}ごろ</b>です(あと${diff}日)。`;
+}
+
+function renderPasses(passes) {
+  const grid = document.getElementById("pass-grid");
+  const note = document.getElementById("pass-note");
+  if (!passes || !passes.length) {
+    note.textContent = "通過記録はまだありません。";
+    return;
+  }
+  grid.innerHTML = passes.map((p) => {
+    const verdict = p.used ? "採用中" : "雲で見送り";
+    const seen = p.visible >= 60 ? "よく見えた"
+      : p.visible >= 15 ? "雲の切れ間からわずかに"
+      : "地表は見えず";
+    return `<figure class="pass-item ${p.used ? "used" : ""}">
+      <img src="photos/sat/${p.thumb}" width="420" height="502" loading="lazy"
+           alt="${md(p.date)}に衛星が撮影した美瑛。${seen}">
+      <p class="pass-date">${md(p.date)}</p>
+      <p class="pass-verdict">${verdict}</p>
+      <p class="pass-num">地表が見えた割合 ${p.visible}%</p>
+    </figure>`;
+  }).join("");
+  const blank = passes.filter((p) => p.visible < 1).length;
+  note.innerHTML = `「地表が見えた割合」は、切り出した美瑛エリアのうち真っ白(雲)でなかった部分の割合です。`
+    + (blank ? `直近5回のうち<b>${blank}回は一面の雲</b>で、丘は1ピクセルも写っていません。` : "");
+}
+
 (async () => {
   try {
     const res = await fetch("data/satellite.json?nc=" + Date.now());
     const meta = await res.json();
     const d = meta.date;
+    const today = todayUTC();
+    const age = daysBetween(toDate(d), today);
+    const passes = meta.passes || [];
+    const missed = passes.filter((p) => !p.used && p.date > d).length;
+
     document.getElementById("sat-date").textContent =
       `撮影日: ${Number(d.slice(5, 7))}月${Number(d.slice(8, 10))}日(${d.slice(0, 4)}年)`;
+
     const badge = document.getElementById("sat-badge");
-    badge.textContent = "🛰 最新の晴れた撮影日";
+    const state = document.getElementById("sat-state");
+    const title = document.getElementById("sat-state-title");
+    const desc = document.getElementById("sat-state-desc");
+
+    if (missed === 0) {
+      badge.textContent = "🛰 最新の晴れた撮影";
+      title.textContent = "最新の晴れた撮影を表示中";
+      desc.innerHTML = `<b>${md(d)}</b>に撮影された画像です。次の晴れた撮影があれば自動で入れ替わります。`;
+    } else {
+      state.classList.add("waiting");
+      badge.classList.add("waiting");
+      badge.textContent = `☁️ 晴れ待ち ${age}日`;
+      title.textContent = "雲のため、晴れた日の画像を待っています";
+      desc.innerHTML = `表示中の画像は<b>${md(d)}</b>のものです。その後、衛星は美瑛の上空を<b>${missed}回</b>通りましたが、`
+        + `いずれも雲で地表が見えず見送りました。下の<b>「衛星の通過記録」</b>で、その${missed}回に実際に撮れた画像をご覧いただけます。`;
+    }
     badge.classList.remove("hidden");
+    document.getElementById("sat-state-next").innerHTML = nextPassLabel(passes, today);
+
+    if (meta.checked_at) {
+      const c = new Date(meta.checked_at);
+      const j = new Date(c.getTime() + 9 * 3600000);
+      const p2 = (n) => String(n).padStart(2, "0");
+      document.getElementById("sat-checked").textContent =
+        `最終チェック: ${j.getUTCMonth() + 1}/${j.getUTCDate()} ${p2(j.getUTCHours())}:${p2(j.getUTCMinutes())}（毎日自動確認しています）`;
+    }
+
+    renderPasses(passes);
     // 画像のキャッシュを撮影日で無効化
     document.getElementById("img-hills").src = `photos/sat/sat-hills.jpg?d=${d}`;
     document.getElementById("img-wide").src = `photos/sat/sat-wide.jpg?d=${d}`;
   } catch (e) {
     document.getElementById("sat-date").textContent = "撮影日情報を取得できませんでした";
+    document.getElementById("sat-state-title").textContent = "状況を取得できませんでした";
+    document.getElementById("pass-note").textContent = "通過記録を取得できませんでした。";
   }
 })();
 </script>

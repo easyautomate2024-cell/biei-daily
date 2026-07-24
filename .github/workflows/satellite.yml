@@ -26,12 +26,13 @@ jobs:
 
       - name: 変更があればコミット
         run: |
-          if ! git diff --quiet; then
+          git add photos/sat data/satellite.json
+          if git diff --cached --quiet; then
+            echo "変更なし"
+          else
+            MSG=$(python -c "import json; m=json.load(open('data/satellite.json')); print(f\"衛星データ更新: {m['date']}の画像を掲載中（確認 {m['checked_at'][:10]}）\")")
             git config user.name "biei-daily-bot"
             git config user.email "easy.automate2024@gmail.com"
-            git add photos/sat data/satellite.json
-            git commit -m "衛星画像を自動更新"
+            git commit -m "$MSG"
             git push
-          else
-            echo "変更なし"
           fi

@@ -17,7 +17,7 @@
 | 麦秋メーター | 積算温度の平年比から「丘が金色になる日」を予測 |
 | 十勝岳 火山情報 | 気象庁の噴火警報をリアルタイム表示 |
 | 直売所の歩き方 | 無人販売所の作法ガイド+公式直売スポットの地図(個人宅前の販売所の場所は掲載しない方針) |
-| 衛星が見た美瑛 | NASA GIBS/HLS(30m)の衛星画像から「最新の晴れた撮影日」を自動選択して表示 |
+| 衛星が見た美瑛 | Sentinel-2(10m)から「最新の晴れた撮影日」を自動選択して表示。あわせて直近5回の通過記録(雲で見送った日の実画像つき)と晴れ待ち状況を掲載 |
 
 スコアは「予報」ではなく**条件充足度の推定**です。すべての計算式は
 [スコアの仕組み](https://easyautomate2024-cell.github.io/biei-daily/logic.html)で公開しており、
@@ -40,7 +40,18 @@ HTML / CSS / JavaScript のみの静的サイト(ビルドなし・サーバー�
 python -m http.server 8080 --directory .
 ```
 
-開発メモ: `app.js` を変更したら `index.html` の `<script src="app.js?v=N">` の N を上げてください(キャッシュ対策)。
+開発メモ: `app.js` を変更したら `index.html` の `<script src="app.js?v=N">` の N を、
+`style.css` を変更したら全HTMLの `<link href="style.css?v=N">` の N を上げてください(キャッシュ対策)。
+
+衛星画像は GitHub Actions(`.github/workflows/satellite.yml`・毎日実行)が
+`scripts/update_satellite.py` を走らせて自動更新します。処理内容:
+
+- Sentinel-2 の直近30日の通過を検索し、雲量35%以下で最も新しいシーンを掲載画像に採用
+- 晴れの有無にかかわらず直近5回の通過を `data/satellite.json` の `passes` に記録し、
+  `photos/sat/pass-YYYY-MM-DD.jpg` に小さなサムネイルを保存(古い分は自動削除)
+- `visible` は「美瑛エリアで地表が見えた割合」(切り出し画像のうち真っ白でない画素の割合)
+- `checked_at` は毎日更新されるため、晴れなかった日もチェック済みであることがサイトに表示される
+- 処理済みシーンは再ダウンロードしないので、通常の実行は数秒で終わります
 
 ## 注意事項
 

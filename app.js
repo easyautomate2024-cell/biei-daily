@@ -455,8 +455,16 @@ async function loadSatTeaser() {
     if (!res.ok) return;
     const meta = await res.json();
     const d = meta.date;
-    document.getElementById("sat-teaser-date").textContent =
-      `撮影日 ${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}(最新の晴れた日)`;
+    const md = `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}`;
+    const missed = (meta.passes || []).filter((p) => !p.used && p.date > d).length;
+
+    const label = document.getElementById("sat-teaser-date");
+    if (missed > 0) {
+      const age = Math.round((Date.parse(tokyoDateStr() + "T00:00:00Z") - Date.parse(d + "T00:00:00Z")) / 86400000);
+      label.textContent = `☁️ 雲で晴れ待ち${age}日（${md}の撮影を表示中）`;
+    } else {
+      label.textContent = `撮影日 ${md}(最新の晴れた日)`;
+    }
     document.getElementById("sat-teaser-img").src = `photos/sat/sat-hills.jpg?d=${d}`;
   } catch (e) { /* 失敗時は既定文言のまま */ }
 }
