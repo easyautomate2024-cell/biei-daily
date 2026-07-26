@@ -5,6 +5,14 @@
   "updated_at": "2026-07-19T19:39:54Z",
   "passes": [
     {
+      "date": "2026-07-25",
+      "scene_id": "S2B_54TXP_20260725_0_L2A",
+      "cloud": 97.8,
+      "visible": 0.1,
+      "thumb": "pass-2026-07-25.jpg",
+      "used": false
+    },
+    {
       "date": "2026-07-22",
       "scene_id": "S2A_54TXP_20260722_1_L2A",
       "cloud": 99.7,
@@ -45,5 +53,5 @@
       "used": true
     }
   ],
-  "checked_at": "2026-07-25T03:43:59Z"
+  "checked_at": "2026-07-26T04:01:53Z"
 }
