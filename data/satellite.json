@@ -53,5 +53,23 @@
       "used": true
     }
   ],
-  "checked_at": "2026-07-27T04:08:46Z"
+  "checked_at": "2026-07-27T23:26:14Z",
+  "years": [
+    {
+      "year": 2025,
+      "date": "2025-07-05",
+      "cloud": 28.8,
+      "visible": 99.4,
+      "file": "year-2025.jpg",
+      "for_date": "2026-07-05"
+    },
+    {
+      "year": 2024,
+      "date": "2024-07-05",
+      "cloud": 34.7,
+      "visible": 98.9,
+      "file": "year-2024.jpg",
+      "for_date": "2026-07-05"
+    }
+  ]
 }

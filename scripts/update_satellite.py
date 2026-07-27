@@ -44,6 +44,11 @@ CROPS = {
 THUMB_WIDTH = 420   # 通過記録のサムネイル幅
 BRIGHT_LIMIT = 200  # これ以上明るいと「真っ白＝雲で地表が見えない」とみなす
 
+# 年次比較「この丘、去年は何色?」
+YEARS_BACK = (1, 2)      # 何年前と比べるか(去年・おととし)
+YEAR_WINDOW_DAYS = 15    # 掲載中の撮影日の前後この日数から探す
+YEAR_MIN_VISIBLE = 60    # 美瑛エリアの地表がこれ以上見えるシーンだけ採用
+
 
 def utcnow():
     return datetime.now(timezone.utc)
@@ -139,6 +144,86 @@ def build_history(items, old_passes, must_include=None):
     return passes
 
 
+def search_year_scene(target):
+    """target(datetime)の前後 YEAR_WINDOW_DAYS のシーンを、日付の近い順で返す"""
+    start = target - timedelta(days=YEAR_WINDOW_DAYS)
+    end = target + timedelta(days=YEAR_WINDOW_DAYS)
+    url = (
+        f"{STAC}?bbox={SEARCH_BBOX}"
+        f"&datetime={start.strftime('%Y-%m-%dT00:00:00Z')}/{end.strftime('%Y-%m-%dT23:59:59Z')}"
+        "&limit=50"
+    )
+    with urllib.request.urlopen(url, timeout=90) as r:
+        items = json.loads(r.read())["features"]
+    items = [f for f in items
+             if f["properties"].get("eo:cloud_cover", 100) <= MAX_CLOUD]
+    items.sort(key=lambda f: abs(
+        datetime.strptime(f["properties"]["datetime"][:10], "%Y-%m-%d") - target))
+    return items
+
+
+def build_year_compare(meta):
+    """掲載中の撮影日と同じ時期の、去年・おととしの画像を用意する。
+    掲載画像が変わった時だけ取り直す(for_date で判定)。"""
+    base_date = meta.get("date")
+    if not base_date:
+        return
+    by_year = {y.get("year"): y for y in meta.get("years", [])}
+    out = []
+    for back in YEARS_BACK:
+        yr = int(base_date[:4]) - back
+        fname = f"year-{yr}.jpg"
+        prev = by_year.get(yr)
+        if prev and prev.get("for_date") == base_date \
+                and os.path.exists(os.path.join(OUT_DIR, fname)):
+            out.append(prev)
+            continue
+
+        target = datetime.strptime(f"{yr}-{base_date[5:]}", "%Y-%m-%d")
+        try:
+            candidates = search_year_scene(target)
+        except Exception as e:
+            print(f"  {yr}年: 検索失敗 ({e})")
+            if prev:
+                out.append(prev)
+            continue
+
+        found = None
+        for f in candidates:
+            date = f["properties"]["datetime"][:10]
+            try:
+                img = read_crop(f["assets"]["visual"]["href"], HILLS_BBOX)
+            except Exception as e:
+                print(f"  {yr}年 {date}: 切り出し失敗 ({e})")
+                continue
+            if img.size == 0:
+                continue
+            vis = visible_pct(img)
+            if vis < YEAR_MIN_VISIBLE:
+                print(f"  {yr}年 {date}: 地表可視{vis}%は基準未満。次の候補へ。")
+                continue
+            save_jpg(img, os.path.join(OUT_DIR, fname), 1000)
+            found = {
+                "year": yr,
+                "date": date,
+                "cloud": round(f["properties"].get("eo:cloud_cover", -1), 1),
+                "visible": vis,
+                "file": fname,
+                "for_date": base_date,
+            }
+            print(f"  {yr}年: {date} 雲量{found['cloud']}% 地表可視{vis}% -> {fname}")
+            break
+
+        if found:
+            out.append(found)
+        elif prev:
+            print(f"  {yr}年: 新候補なし。前回分({prev.get('date')})を継続。")
+            out.append(prev)
+        else:
+            print(f"  {yr}年: 使えるシーンが見つからず。")
+    meta["years"] = out
+
+
 def adopt_scene(clear, meta):
     """晴れたシーンを掲載画像として書き出し、meta を更新する"""
     date = clear["properties"]["datetime"][:10]
@@ -201,6 +286,9 @@ def main():
         adopt_scene(clear, meta)
 
     passes = build_history(items, meta.get("passes", []), must_include=meta.get("scene_id"))
+
+    print("年次比較の画像を確認:")
+    build_year_compare(meta)
 
     for p in passes:
         p["used"] = (p["scene_id"] == meta.get("scene_id"))

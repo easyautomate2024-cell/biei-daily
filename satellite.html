@@ -85,6 +85,54 @@
   font-size: 11.5px; color: var(--muted); margin: 2px 0 0;
   font-variant-numeric: tabular-nums;
 }
+
+/* 年次比較スライダー */
+.yc-years { display: flex; gap: 8px; margin: 0 0 14px; }
+.yc-years button {
+  font: inherit; font-size: 13px; font-weight: 700;
+  padding: 7px 18px; border-radius: 980px; cursor: pointer;
+  border: 1px solid var(--border2); background: #fff; color: var(--muted);
+}
+.yc-years button.active {
+  background: var(--accent); border-color: var(--accent); color: #fff;
+}
+.yc-wrap {
+  position: relative; overflow: hidden;
+  border-radius: 12px; border: 1px solid var(--border2);
+  touch-action: pan-y;
+}
+.yc-wrap img {
+  width: 100%; height: auto; display: block;
+  -webkit-user-drag: none; user-select: none;
+}
+.yc-past {
+  position: absolute; inset: 0;
+  clip-path: inset(0 50% 0 0);
+}
+.yc-divider {
+  position: absolute; top: 0; bottom: 0; left: 50%;
+  width: 3px; margin-left: -1.5px;
+  background: #fff; box-shadow: 0 0 6px rgba(0,0,0,0.5);
+  pointer-events: none;
+}
+.yc-divider::after {
+  content: "◀ ▶";
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff; color: #1d1d1f;
+  font-size: 11px; font-weight: 700; letter-spacing: 1px;
+  padding: 6px 10px; border-radius: 980px; white-space: nowrap;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.35);
+}
+.yc-label {
+  position: absolute; top: 10px;
+  font-size: 12px; font-weight: 700; color: #fff;
+  background: rgba(0,0,0,0.55); border-radius: 980px;
+  padding: 4px 12px; pointer-events: none;
+}
+.yc-label.past { left: 10px; }
+.yc-label.now { right: 10px; }
+.yc-note { margin-top: 10px !important; }
 .sat-img {
   width: 100%;
   height: auto;
@@ -141,6 +189,23 @@
     <p class="sat-caption">上が北。中央上の白い集まりが美瑛の市街地、ベージュ〜金色の区画は色づいた麦畑、緑はビート・豆・じゃがいもなど。10m解像度(1ピクセル=10m四方)。</p>
   </section>
 
+  <section class="card hidden" id="yc-card">
+    <p class="eyebrow">Year Comparison</p>
+    <h2>この丘、去年は何色?</h2>
+    <p class="sat-caption" style="margin: 0 0 14px;" id="yc-intro">読み込み中…</p>
+    <div class="yc-years" id="yc-years"></div>
+    <div class="yc-wrap" id="yc-wrap">
+      <img id="yc-now" src="photos/sat/sat-hills.jpg" alt="今年の美瑛の丘(衛星画像)">
+      <div class="yc-past" id="yc-past-box">
+        <img id="yc-past" src="" alt="過去の同じ時期の美瑛の丘(衛星画像)">
+      </div>
+      <div class="yc-divider" id="yc-divider"></div>
+      <span class="yc-label past" id="yc-label-past"></span>
+      <span class="yc-label now" id="yc-label-now"></span>
+    </div>
+    <p class="sat-caption yc-note">スライダーを左右にドラッグすると年が切り替わります。同じ畑なのに年ごとに色が違うのは<strong>輪作</strong>のため——連作障害を避けるため、小麦→ビート→豆→じゃがいも、と毎年作物を回しています。パッチワークの柄は、実は毎年描き直されています。</p>
+  </section>
+
   <section class="card">
     <p class="eyebrow">Pass Log</p>
     <h2>衛星の通過記録</h2>
@@ -163,7 +228,7 @@
       <li><strong>観測衛星Sentinel-2(ESA)の10m解像度データ</strong>を使っています。美瑛の畑1枚がはっきり見える細かさです</li>
       <li>衛星が美瑛上空を撮るのは<strong>2〜5日に一度</strong>。さらに雲の日もあるため、このサイトは<strong>毎朝自動で新しい撮影をチェックし、晴れた撮影があった日だけ画像を差し替えます</strong>。画像の下の撮影日が「いま表示している美瑛」の日付です</li>
       <li>Googleマップの航空写真より粗いのは事実です。そのかわり、あちらは「数年前のいつか」、こちらは<strong>「先週の美瑛」</strong>——鮮度が取り柄です。麦の色づきや雪の到来など、丘の「いま」はこちらにしか写りません</li>
-      <li>「丘の色ごよみ」や麦秋メーターの実写版としてどうぞ。次の楽しみ: 同じ場所の去年の画像と並べる「この丘、去年は何色?」を準備中です</li>
+      <li>「丘の色ごよみ」や麦秋メーターの実写版としてどうぞ。上の<strong>「この丘、去年は何色?」</strong>では、同じ時期の去年・おととしの画像とスライダーで見比べられます。掲載画像が新しくなると、比較する過去の画像も同じ時期のものに自動で選び直されます</li>
     </ul>
     <p class="note">データ出典: <a href="https://registry.opendata.aws/sentinel-2-l2a-cogs/" rel="noopener">Sentinel-2 L2A(ESA / AWS Open Data)</a>。画像は毎日の自動処理(GitHub Actions)で生成しています。</p>
   </section>
@@ -196,6 +261,52 @@ function nextPassLabel(passes, today) {
   const diff = daysBetween(today, n);
   if (diff <= 0) return "次に美瑛の上空を通るのは<b>今日ごろ</b>です。晴れていれば、明日には画像が入れ替わります。";
   return `次に美瑛の上空を通るのは<b>${md(iso)}ごろ</b>です(あと${diff}日)。`;
+}
+
+function setupYearCompare(meta) {
+  const years = meta.years || [];
+  if (!years.length || !meta.date) return;
+  document.getElementById("yc-card").classList.remove("hidden");
+
+  const d = meta.date;
+  document.getElementById("yc-intro").innerHTML =
+    `いま表示中の<b>${md(d)}</b>と、同じ時期の過去の撮影を重ねました。`;
+  document.getElementById("yc-now").src = `photos/sat/sat-hills.jpg?d=${d}`;
+  document.getElementById("yc-label-now").textContent = `今年 ${md(d)}`;
+
+  const btnBox = document.getElementById("yc-years");
+  const select = (y) => {
+    document.getElementById("yc-past").src = `photos/sat/${y.file}?d=${y.date}`;
+    document.getElementById("yc-label-past").textContent = `${y.year}年 ${md(y.date)}`;
+    [...btnBox.children].forEach((b) =>
+      b.classList.toggle("active", Number(b.dataset.year) === y.year));
+  };
+  years.forEach((y) => {
+    const b = document.createElement("button");
+    b.textContent = `${y.year}年`;
+    b.dataset.year = y.year;
+    b.addEventListener("click", () => select(y));
+    btnBox.appendChild(b);
+  });
+  select(years[0]);
+
+  // ドラッグで境界を動かす
+  const wrap = document.getElementById("yc-wrap");
+  const move = (clientX) => {
+    const r = wrap.getBoundingClientRect();
+    const pct = Math.max(2, Math.min(98, ((clientX - r.left) / r.width) * 100));
+    document.getElementById("yc-past-box").style.clipPath = `inset(0 ${100 - pct}% 0 0)`;
+    document.getElementById("yc-divider").style.left = `${pct}%`;
+  };
+  let dragging = false;
+  wrap.addEventListener("pointerdown", (e) => {
+    dragging = true;
+    wrap.setPointerCapture(e.pointerId);
+    move(e.clientX);
+  });
+  wrap.addEventListener("pointermove", (e) => { if (dragging) move(e.clientX); });
+  wrap.addEventListener("pointerup", () => { dragging = false; });
+  wrap.addEventListener("pointercancel", () => { dragging = false; });
 }
 
 function renderPasses(passes) {
@@ -265,6 +376,7 @@ function renderPasses(passes) {
     }
 
     renderPasses(passes);
+    setupYearCompare(meta);
     // 画像のキャッシュを撮影日で無効化
     document.getElementById("img-hills").src = `photos/sat/sat-hills.jpg?d=${d}`;
     document.getElementById("img-wide").src = `photos/sat/sat-wide.jpg?d=${d}`;
