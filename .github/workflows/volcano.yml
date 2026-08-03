@@ -1,0 +1,39 @@
+name: 十勝岳の火山記録を蓄積
+
+on:
+  schedule:
+    - cron: "0 * * * *"    # 毎時(気象庁フィードは直近ぶんしか保持しないため)
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: volcano
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 火山記録を更新
+        run: python scripts/update_volcano.py
+
+      - name: 新しい記録があればコミット
+        run: |
+          git add data/volcano.json
+          if git diff --cached --quiet; then
+            echo "変更なし"
+          else
+            git config user.name "biei-daily-bot"
+            git config user.email "easy.automate2024@gmail.com"
+            git commit -m "十勝岳の火山記録を更新"
+            git pull --rebase --autostash
+            git push
+          fi

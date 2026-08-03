@@ -25,7 +25,7 @@
   gtag('js', new Date());
   gtag('config', 'G-2DT79T20E6');
 </script>
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
 <nav class="site-nav">
@@ -60,7 +60,9 @@
   <section id="volcano-box" class="alert-box info hidden">
     <h3>⛰ 十勝岳 火山情報</h3>
     <p id="volcano-text">読み込み中…</p>
-    <p class="note">出典: <a href="https://www.jma.go.jp/bosai/map.html#contents=volcano" rel="noopener">気象庁 火山登山者向けの情報提供ページ</a> — 白金・望岳台方面へ行く前に最新情報をご確認ください。</p>
+    <p id="volcano-eruption" class="volcano-eruption hidden"></p>
+    <p id="volcano-latest" class="volcano-latest hidden"></p>
+    <p class="note">規制範囲は火口周辺です。白金温泉・望岳台や居住区域が規制対象かどうかは、そのつど<a href="https://town.biei.hokkaido.jp/emergency/tokachidake.html" rel="noopener">美瑛町の火山情報</a>と<a href="https://www.jma.go.jp/bosai/map.html#contents=volcano" rel="noopener">気象庁</a>でご確認ください。</p>
   </section>
 
   <section class="cards">
@@ -172,6 +174,6 @@
   <p>このサイトは個人が運営する非公式の情報サイトです。スコアは気象条件からの推定であり、見え方・安全を保証しません。</p>
 </footer>
 
-<script src="app.js?v=12"></script>
+<script src="app.js?v=14"></script>
 </body>
 </html>

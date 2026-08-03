@@ -443,9 +443,49 @@ async function loadVolcano() {
     box.classList.remove("info", "warning");
     box.classList.add(level >= 3 ? "danger" : level >= 2 ? "warning" : "info");
     box.classList.remove("hidden");
+    loadVolcanoRecords();
   } catch (e) {
     /* 取得失敗時は何も表示しない */
   }
+}
+
+// 十勝岳の噴火・解説の記録(GitHub Actions が気象庁フィードから毎日蓄積)
+async function loadVolcanoRecords() {
+  try {
+    const res = await fetch("data/volcano.json");
+    if (!res.ok) return;
+    const meta = await res.json();
+
+    const jst = (iso) => {
+      const d = new Date(new Date(iso).getTime() + 9 * 3600000);
+      return `${d.getUTCMonth() + 1}/${d.getUTCDate()} ${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+    };
+
+    // 直近の噴火(あれば強調。古くなったら出さない)
+    const er = meta.latest_eruption;
+    if (er) {
+      const days = Math.floor((Date.now() - Date.parse(er.datetime)) / 86400000);
+      if (days <= 90) {
+        const el = document.getElementById("volcano-eruption");
+        const ago = days === 0 ? "本日" : `${days}日前`;
+        el.textContent = `🌋 ${jst(er.datetime)}、噴火が発生しました（${ago}）`;
+        el.classList.remove("hidden");
+      }
+    }
+
+    // 最新の解説情報の本文を一行で
+    const latest = (meta.records || []).find((r) => r.kind === "火山の状況に関する解説情報");
+    if (latest) {
+      const el = document.getElementById("volcano-latest");
+      // 気象庁の本文は「【火山名 …】＜見出し＞ 本文」の形なので、前置きを外す
+      const text = latest.text
+        .replace(/^【[^】]*】\s*/, "")
+        .replace(/^＜[^＞]*＞\s*/, "")
+        .trim();
+      el.textContent = `${jst(latest.datetime)} 気象庁「${latest.kind}」: ${text}`;
+      el.classList.remove("hidden");
+    }
+  } catch (e) { /* 記録が無い場合はレベル表示のみ */ }
 }
 
 // ── 衛星カードの撮影日表示 ──────────────────────────────

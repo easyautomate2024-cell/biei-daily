@@ -218,6 +218,20 @@ main { max-width: 1000px; margin: 0 auto; padding: 48px 20px 96px; }
 .alert-box.danger { border-left-color: var(--minus); background: #fdefed; }
 .alert-box p { font-size: 14px; color: var(--text); margin: 0; }
 .alert-box p.note { margin-top: 8px; }
+.alert-box .volcano-eruption {
+  margin-top: 10px !important;
+  font-weight: 700;
+  color: #b3401f !important;
+  background: #fdefed;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+.alert-box .volcano-latest {
+  margin-top: 8px !important;
+  font-size: 13px !important;
+  color: var(--muted) !important;
+  line-height: 1.7;
+}
 .alert-box h3 { margin: 0 0 8px; font-size: 15px; }
 .alert-box ul { margin: 0 0 10px; padding-left: 20px; font-size: 14px; color: var(--muted); }
 .alert-box li { margin: 3px 0; }
