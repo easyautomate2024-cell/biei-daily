@@ -162,6 +162,8 @@ main { max-width: 1000px; margin: 0 auto; padding: 48px 20px 96px; }
   position: relative;
 }
 .score-ring.fog { background: conic-gradient(#6e6e73 calc(var(--pct) * 1%), #e8e8ed 0); }
+.score-ring.winter { background: #dceaf5; }
+.score-ring.winter span { color: #4a7fa5; font-size: 36px; }
 .score-ring::before {
   content: "";
   position: absolute; inset: 8px;

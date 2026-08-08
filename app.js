@@ -427,6 +427,42 @@ async function loadBakushu() {
   }
 }
 
+// ── 冬の青い池(衛星ロガーの結氷検出でスコアを冬モードへ) ──
+async function pondWinterState() {
+  try {
+    const res = await fetch("data/pond_color.json");
+    if (!res.ok) return null;
+    const recs = (await res.json()).records || [];
+    if (!recs.length) return null;
+    const last = recs[recs.length - 1];
+    const ageDays = Math.round(
+      (Date.parse(tokyoDateStr() + "T00:00:00Z") - Date.parse(last.date + "T00:00:00Z")) / 86400000
+    );
+    const month = Number(tokyoDateStr().slice(5, 7));
+    const winterCal = month >= 12 || month <= 3;
+    // 最新の衛星記録が結氷・雪なら冬モード(雪の季節でなければ45日で失効)
+    if (last.state === "結氷・雪" && (winterCal || month === 4 || month === 11 || ageDays <= 45)) {
+      return { date: last.date, confirmed: true };
+    }
+    // 雲が続いて記録が古くても、暦が真冬なら冬扱い(保険)
+    if (winterCal && ageDays > 45) return { date: null, confirmed: false };
+    return null;
+  } catch (e) { return null; }
+}
+
+function renderPondWinter(w) {
+  document.getElementById("pond-title").textContent = "冬の青い池";
+  document.getElementById("pond-mode").classList.add("hidden");
+  document.getElementById("pond-ring").classList.add("winter");
+  document.getElementById("pond-score").textContent = "❄";
+  document.getElementById("pond-verdict").textContent = "池は結氷して、雪の下です";
+  const md = w.date ? `${Number(w.date.slice(5, 7))}/${Number(w.date.slice(8, 10))}` : null;
+  document.getElementById("pond-advice").textContent = w.confirmed && md
+    ? `衛星で確認(${md})。冬の池はライトアップの季節——青は春(例年4月下旬)に戻ります。`
+    : "例年この時期は結氷しています。冬の池はライトアップの季節——青は春(例年4月下旬)に戻ります。";
+  document.getElementById("pond-reasons").innerHTML = "";
+}
+
 // ── 十勝岳 火山情報(気象庁・噴火警報/予報) ──────────────
 const VOLCANO_URL = "https://www.jma.go.jp/bosai/volcano/data/warning/108.json";
 
@@ -547,17 +583,23 @@ async function main() {
     document.getElementById("now-wind").textContent = `風 ${(hourly.wind_speed_10m[nowIdx] / 3.6).toFixed(1)}m/s`;
   }
 
-  // 17時以降は「明日の見込み」に切り替える(旅行前夜のユーザー向け)
-  const eveningMode = tokyoHour() >= 17;
-  const pondDay = eveningMode ? tomorrow : today;
-  if (eveningMode) {
-    document.getElementById("pond-title").textContent =
-      `明日(${Number(tomorrow.slice(5, 7))}/${Number(tomorrow.slice(8, 10))})の青い池スコア`;
-    document.getElementById("pond-mode").textContent = "🌙 今夜の時点での明日の見込みです";
-    document.getElementById("pond-mode").classList.remove("hidden");
+  // 結氷期はスコアをやめて冬モード(衛星ロガーの検出が優先、暦は保険)
+  const winter = await pondWinterState();
+  if (winter) {
+    renderPondWinter(winter);
+  } else {
+    // 17時以降は「明日の見込み」に切り替える(旅行前夜のユーザー向け)
+    const eveningMode = tokyoHour() >= 17;
+    const pondDay = eveningMode ? tomorrow : today;
+    if (eveningMode) {
+      document.getElementById("pond-title").textContent =
+        `明日(${Number(tomorrow.slice(5, 7))}/${Number(tomorrow.slice(8, 10))})の青い池スコア`;
+      document.getElementById("pond-mode").textContent = "🌙 今夜の時点での明日の見込みです";
+      document.getElementById("pond-mode").classList.remove("hidden");
+    }
+    const pond = pondScore(hourly, pondDay);
+    renderScore("pond", pond.score, pondVerdict, pond.reasons);
   }
-  const pond = pondScore(hourly, pondDay);
-  renderScore("pond", pond.score, pondVerdict, pond.reasons);
 
   const fog = fogScore(hourly, today, tomorrow);
   renderScore("fog", fog.score, fogVerdict, fog.reasons);
