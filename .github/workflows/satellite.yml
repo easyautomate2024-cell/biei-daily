@@ -24,9 +24,12 @@ jobs:
       - name: 衛星画像を更新
         run: python scripts/update_satellite.py
 
+      - name: 青い池の状態を記録
+        run: python scripts/update_pond.py
+
       - name: 変更があればコミット
         run: |
-          git add photos/sat data/satellite.json
+          git add photos/sat data/satellite.json data/pond_color.json
           if git diff --cached --quiet; then
             echo "変更なし"
           else
