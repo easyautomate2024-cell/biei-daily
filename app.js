@@ -331,6 +331,15 @@ async function loadBakushu() {
     const year = Number(today.slice(0, 4));
     const mmdd = today.slice(5);
 
+    // 収穫後(8月): メーターを閉じて季節の締めくくりを表示(積算の取得も不要)
+    if (mmdd >= "08-01" && mmdd <= "08-31") {
+      status.textContent = "今季の麦秋はおわりました。丘は収穫のあとの色へ。";
+      pred.textContent = "金色の季節は7月なかば。来年もこのメーターで追いかけます。";
+      stage.textContent = "次のシーズンは 4/1 から積算を再開します。";
+      barWrap.classList.add("hidden");
+      return;
+    }
+
     // シーズンオフ(9/1〜3/31): 次の積算開始までのカウントダウン
     if (mmdd < GDD_START_MMDD || mmdd > "08-31") {
       const nextYear = mmdd > "08-31" ? year + 1 : year;
