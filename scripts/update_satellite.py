@@ -30,7 +30,10 @@ META_PATH = os.path.join(ROOT, "data", "satellite.json")
 
 STAC = "https://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a/items"
 SEARCH_BBOX = "142.42,43.53,142.50,43.60"  # 美瑛の丘・市街エリア
-MIN_VISIBLE = 95    # 美瑛エリアの地表がこれ以上見えていれば掲載画像として採用
+MIN_VISIBLE = 95    # 美瑛エリアの地表がこれ以上見えていれば掲載画像として採用。
+                    # 多少の雲は許容する方針。快晴だけを選ぶと畑の色が変わらない
+                    # 時期に毎回同じ写真に見えてしまうが、雲の形は通過ごとに違うので
+                    # 「その日撮られたもの」だと伝わる
 LOOKBACK_DAYS = 30  # 通過記録をさかのぼる日数(通過は約5日おき)
 HISTORY_KEEP = 5    # 記録に残す通過回数(サムネイル枚数もこの数)
 
