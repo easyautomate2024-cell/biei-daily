@@ -14,6 +14,7 @@ import colorsys
 import json
 import os
 import sys
+import time
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
@@ -32,6 +33,25 @@ MAX_CLOUD = 50      # 池は小さいので広域雲量はゆるめに(白判定
 LOOKBACK_DAYS = 12
 
 UA = {"User-Agent": "biei-daily (+https://easyautomate2024-cell.github.io/biei-daily/)"}
+RETRY = 3           # 通信が切れることがあるので試す回数
+RETRY_WAIT = 5      # 次の試行までの待ち秒数(回を追うごとに延ばす)
+
+
+def fetch_json(url):
+    """STACに問い合わせる。一時的な通信エラーは数回まで待って試し直す"""
+    last = None
+    for attempt in range(RETRY):
+        try:
+            req = urllib.request.Request(url, headers=UA)
+            with urllib.request.urlopen(req, timeout=90) as r:
+                return json.loads(r.read())
+        except Exception as e:      # 接続リセット・タイムアウト等
+            last = e
+            if attempt < RETRY - 1:
+                wait = RETRY_WAIT * (attempt + 1)
+                print(f"通信に失敗({e})。{wait}秒待って再試行します")
+                time.sleep(wait)
+    raise last
 
 
 def classify(r, g, b, month):
@@ -68,8 +88,7 @@ def main():
         "&limit=50"
     )
     try:
-        with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=90) as r:
-            items = json.loads(r.read())["features"]
+        items = fetch_json(url)["features"]
     except Exception as e:
         print(f"シーン検索に失敗: {e}")
         return 1

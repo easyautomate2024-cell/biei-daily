@@ -14,6 +14,7 @@ Sentinel-2 の公開データ(AWS Open Data / Element84 STAC)から、直近で�
 import json
 import os
 import sys
+import time
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
@@ -50,8 +51,30 @@ YEAR_WINDOW_DAYS = 15    # 掲載中の撮影日の前後この日数から探�
 YEAR_MIN_VISIBLE = 60    # 美瑛エリアの地表がこれ以上見えるシーンだけ採用
 
 
+UA = {"User-Agent": "biei-daily (+https://easyautomate2024-cell.github.io/biei-daily/)"}
+RETRY = 3           # 通信が切れることがあるので試す回数
+RETRY_WAIT = 5      # 次の試行までの待ち秒数(回を追うごとに延ばす)
+
+
 def utcnow():
     return datetime.now(timezone.utc)
+
+
+def fetch_json(url):
+    """STACに問い合わせる。一時的な通信エラーは数回まで待って試し直す"""
+    last = None
+    for attempt in range(RETRY):
+        try:
+            req = urllib.request.Request(url, headers=UA)
+            with urllib.request.urlopen(req, timeout=90) as r:
+                return json.loads(r.read())
+        except Exception as e:      # 接続リセット・タイムアウト等
+            last = e
+            if attempt < RETRY - 1:
+                wait = RETRY_WAIT * (attempt + 1)
+                print(f"通信に失敗({e})。{wait}秒待って再試行します")
+                time.sleep(wait)
+    raise last
 
 
 def load_meta():
@@ -71,9 +94,7 @@ def find_items():
         f"&datetime={start.strftime('%Y-%m-%dT00:00:00Z')}/{end.strftime('%Y-%m-%dT23:59:59Z')}"
         "&limit=50"
     )
-    with urllib.request.urlopen(url, timeout=90) as r:
-        payload = r.read()
-    items = json.loads(payload)["features"]
+    items = fetch_json(url)["features"]
     items.sort(key=lambda f: f["properties"]["datetime"], reverse=True)
     return items
 
@@ -153,8 +174,7 @@ def search_year_scene(target):
         f"&datetime={start.strftime('%Y-%m-%dT00:00:00Z')}/{end.strftime('%Y-%m-%dT23:59:59Z')}"
         "&limit=50"
     )
-    with urllib.request.urlopen(url, timeout=90) as r:
-        items = json.loads(r.read())["features"]
+    items = fetch_json(url)["features"]
     items = [f for f in items
              if f["properties"].get("eo:cloud_cover", 100) <= MAX_CLOUD]
     items.sort(key=lambda f: abs(

@@ -11,6 +11,10 @@ permissions:
 jobs:
   update:
     runs-on: ubuntu-latest
+    env:
+      # 画像本体(COG)の読み込みも一時的な通信エラーで落ちないように
+      GDAL_HTTP_MAX_RETRY: "3"
+      GDAL_HTTP_RETRY_DELAY: "5"
     steps:
       - uses: actions/checkout@v4
 
@@ -24,7 +28,9 @@ jobs:
       - name: 衛星画像を更新
         run: python scripts/update_satellite.py
 
+      # 池の記録は補助的なデータ。ここで失敗しても衛星画像の更新は止めない
       - name: 青い池の状態を記録
+        continue-on-error: true
         run: python scripts/update_pond.py
 
       - name: 変更があればコミット
