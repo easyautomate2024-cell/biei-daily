@@ -30,7 +30,7 @@ META_PATH = os.path.join(ROOT, "data", "satellite.json")
 
 STAC = "https://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a/items"
 SEARCH_BBOX = "142.42,43.53,142.50,43.60"  # 美瑛の丘・市街エリア
-MAX_CLOUD = 35      # シーン全体の雲量がこれ以下なら採用
+MIN_VISIBLE = 95    # 美瑛エリアの地表がこれ以上見えていれば掲載画像として採用
 LOOKBACK_DAYS = 30  # 通過記録をさかのぼる日数(通過は約5日おき)
 HISTORY_KEEP = 5    # 記録に残す通過回数(サムネイル枚数もこの数)
 
@@ -49,6 +49,9 @@ BRIGHT_LIMIT = 200  # これ以上明るいと「真っ白＝雲で地表が見�
 YEARS_BACK = (1, 2)      # 何年前と比べるか(去年・おととし)
 YEAR_WINDOW_DAYS = 15    # 掲載中の撮影日の前後この日数から探す
 YEAR_MIN_VISIBLE = 60    # 美瑛エリアの地表がこれ以上見えるシーンだけ採用
+YEAR_MAX_CLOUD = 80      # 候補を絞るための広域雲量の上限。
+                         # 実際の合否は上の地表可視率で決めるので、ここはゆるく取る
+                         # (厳しくすると美瑛だけ晴れていた日を候補から外してしまう)
 
 
 UA = {"User-Agent": "biei-daily (+https://easyautomate2024-cell.github.io/biei-daily/)"}
@@ -176,7 +179,7 @@ def search_year_scene(target):
     )
     items = fetch_json(url)["features"]
     items = [f for f in items
-             if f["properties"].get("eo:cloud_cover", 100) <= MAX_CLOUD]
+             if f["properties"].get("eo:cloud_cover", 100) <= YEAR_MAX_CLOUD]
     items.sort(key=lambda f: abs(
         datetime.strptime(f["properties"]["datetime"][:10], "%Y-%m-%d") - target))
     return items
@@ -294,18 +297,24 @@ def main():
 
     print(f"直近{LOOKBACK_DAYS}日の通過: {len(items)}回")
 
-    # 採用判定: 雲量が基準以下で最も新しいシーン
-    clear = next((f for f in items
-                  if f["properties"].get("eo:cloud_cover", 100) <= MAX_CLOUD), None)
-
-    if clear is None:
-        print(f"直近{LOOKBACK_DAYS}日に雲量{MAX_CLOUD}%以下のシーンなし。画像は据え置き。")
-    elif clear["id"] == meta.get("scene_id"):
-        print(f"掲載中のシーン({clear['id']})が最新の晴れ。画像は据え置き。")
-    else:
-        adopt_scene(clear, meta)
-
+    # 先に通過記録を作る。この過程で「美瑛の上空がどれだけ見えたか」が分かる
     passes = build_history(items, meta.get("passes", []), must_include=meta.get("scene_id"))
+
+    # 採用判定: 美瑛エリアの地表が MIN_VISIBLE% 以上見えた最新の通過。
+    # シーン全体の雲量で判定すると、美瑛だけ晴れている日を取りこぼす
+    # (例: 2026-08-11 は広域雲量41%だが美瑛は99.7%見えていた)
+    best = next((p for p in passes if p.get("visible", 0) >= MIN_VISIBLE), None)
+
+    if best is None:
+        print(f"直近の通過に美瑛が{MIN_VISIBLE}%以上見えた日なし。画像は据え置き。")
+    elif best["scene_id"] == meta.get("scene_id"):
+        print(f"掲載中のシーン({best['scene_id']})が最新の晴れ。画像は据え置き。")
+    else:
+        feature = next((f for f in items if f["id"] == best["scene_id"]), None)
+        if feature is None:
+            print(f"採用候補({best['scene_id']})のシーン情報が見つかりません。画像は据え置き。")
+        else:
+            adopt_scene(feature, meta)
 
     print("年次比較の画像を確認:")
     build_year_compare(meta)
