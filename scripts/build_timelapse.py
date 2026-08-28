@@ -15,6 +15,8 @@ import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
 
+import numpy as np
+
 from PIL import Image, ImageDraw, ImageFont
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -29,7 +31,7 @@ VIDEO_PATH = os.path.join(ROOT, "photos", "sat", "timelapse.mp4")
 POSTER_PATH = os.path.join(ROOT, "photos", "sat", "timelapse-poster.jpg")
 
 LOOKBACK_DAYS = 365   # さかのぼる期間
-BUCKET_DAYS = 10      # この日数ごとに1枚選ぶ(1年で約36枚)
+BUCKET_DAYS = 7       # この日数ごとに1枚選ぶ(晴れ次第で1年最大50枚前後)
 MIN_VISIBLE = 90      # 地表がこれ以上見えた日だけ採用(雲の日は駒にしない)
 
 # 雪原は真っ白なので「地表が見えた割合」では雲と区別できず、冬が丸ごと抜ける。
@@ -42,8 +44,28 @@ WINTER_MONTHS = (12, 1, 2, 3)
 WINTER_MAX_CLOUD = 45
 WINTER_MIN_TEXTURE = 12
 FRAME_WIDTH = 720
-FPS = 3
+FPS = 2               # 1駒0.5秒。書き出し時に駒間をディゾルブでつなぐ
+OUT_FPS = 24          # 最終動画のフレームレート(中間コマは前後の駒の混合)
 
+
+
+def render_winter(f):
+    """雪景色を生データ(16bit)から現像する。
+
+    観賞用のvisual画像は雪の明るさで飽和し(9割が255)、雪面の起伏が消える。
+    生の反射率には階調が丸ごと残っているので、パーセンタイルで引き伸ばして
+    から軽いガンマをかけ、白の中のきめを見えるようにする。"""
+    bands = []
+    for name in ("red", "green", "blue"):
+        a = read_crop(f["assets"][name]["href"], HILLS_BBOX)
+        if a.size == 0:
+            return None
+        bands.append(a[:, :, 0].astype(np.float32))
+    raw = np.stack(bands, axis=-1)
+    lo = np.percentile(raw, 0.5)
+    hi = np.percentile(raw, 99.7)
+    v = np.clip((raw - lo) / max(hi - lo, 1.0), 0.0, 1.0)
+    return (255.0 * v ** (1 / 1.25)).astype(np.uint8)
 
 
 def bucket_of(date_str, origin):
@@ -140,6 +162,9 @@ def build_frames(meta):
                 if texture < WINTER_MIN_TEXTURE:
                     print(f"  {date}: きめ{texture:.1f}は雲の一面。次の候補へ。")
                     continue
+                rendered = render_winter(f)   # 白飛びしないよう生データから現像
+                if rendered is not None:
+                    arr = rendered
             elif vis < MIN_VISIBLE:
                 continue
 
@@ -183,8 +208,10 @@ def encode(frames):
     cmd = [
         "ffmpeg", "-y", "-loglevel", "error",
         "-f", "concat", "-safe", "0", "-i", listfile,
-        "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2",
-        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "26",
+        # framerate フィルタが駒と駒の中間コマを混合で作る=ディゾルブ。
+        # 硬い切り替えより、季節が溶けるように変わって見える
+        "-vf", f"framerate=fps={OUT_FPS},scale=trunc(iw/2)*2:trunc(ih/2)*2",
+        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "27",
         "-movflags", "+faststart", "-an",
         VIDEO_PATH,
     ]
