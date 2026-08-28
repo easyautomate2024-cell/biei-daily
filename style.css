@@ -393,6 +393,7 @@ code {
   text-align: right; font-variant-numeric: tabular-nums;
 }
 .fc-row.best .fc-main { color: var(--accent); }
+.fc-cell.top .fc-val { color: var(--accent); }
 .fc-tag {
   display: inline-block; margin-top: 3px; padding: 1px 6px;
   font-size: 10px; font-weight: 600; letter-spacing: 0.02em;

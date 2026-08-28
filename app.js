@@ -188,6 +188,12 @@ function dayLabel(day, offset) {
   return [md, wd];
 }
 
+// その指標で最も高い日。低調な週に無理に印はつけないので、min 未満なら null
+function pickBest(days, key, min) {
+  const top = days.reduce((a, b) => (b[key] > a[key] ? b : a));
+  return top[key] >= min ? top.day : null;
+}
+
 // 「明日」「8/31(月)」のように、文章に入れて読める形にする
 function bestLabel(day, days) {
   const d = days.find((x) => x.day === day);
@@ -195,9 +201,25 @@ function bestLabel(day, days) {
   return d.offset <= 2 ? main : main + sub;
 }
 
-function fcCell(score, kind) {
+// 見出し下の一文。狙い目が出た指標だけを名指しする
+function leadText(days, bestPond, bestFog, winter) {
+  const base = "出かける日を選ぶための、数日先までのスコアです。";
+  const pond = bestPond && bestLabel(bestPond, days);
+  const fog = bestFog && bestLabel(bestFog, days);
+  if (winter) {
+    const head = "結氷期は青い池のスコアをお休みしています。朝霧・雲海の見込みだけお出しします。";
+    return fog ? `${head}いまのところ${fog}が狙い目。` : head;
+  }
+  if (pond && fog && bestPond === bestFog) return `${base}いまのところ${pond}が狙い目(青い池・朝霧とも)。`;
+  if (pond && fog) return `${base}いまのところ青い池は${pond}、朝霧は${fog}が狙い目。`;
+  if (pond) return `${base}いまのところ青い池は${pond}が狙い目。`;
+  if (fog) return `${base}いまのところ朝霧は${fog}が狙い目。`;
+  return base;
+}
+
+function fcCell(score, kind, top) {
   const cell = document.createElement("div");
-  cell.className = `fc-cell ${kind}`;
+  cell.className = `fc-cell ${kind}${top ? " top" : ""}`;
   const bar = document.createElement("div");
   bar.className = "fc-bar";
   bar.style.setProperty("--pct", score);
@@ -227,10 +249,10 @@ function renderForecast(hourly, winter) {
   }
   if (!days.length) return;   // 予報が取れないときは何も出さない
 
-  // 狙い目の日(冬は朝霧で判断)。低調な週に無理に印はつけない
-  const key = winter ? "fog" : "pond";
-  const top = days.reduce((a, b) => (b[key] > a[key] ? b : a));
-  const best = top[key] >= 60 ? top.day : null;
+  // 狙い目は指標ごとに選ぶ(青い池が今ひとつでも霧が出る日はある)。
+  // しきい値は各カードの判定文と揃える(池60=「青が見えそう」/霧55=「可能性あり」)
+  const bestPond = winter ? null : pickBest(days, "pond", 60);
+  const bestFog = pickBest(days, "fog", 55);
 
   grid.className = `forecast-grid${winter ? " winter" : ""}`;
   grid.innerHTML = "";
@@ -243,30 +265,32 @@ function renderForecast(hourly, winter) {
   grid.appendChild(head);
 
   for (const d of days) {
+    const isPond = d.day === bestPond;
+    const isFog = d.day === bestFog;
+
     const row = document.createElement("div");
-    row.className = "fc-row" + (d.day === best ? " best" : "");
+    row.className = "fc-row" + (isPond || isFog ? " best" : "");
 
     const label = document.createElement("div");
     label.className = "fc-day";
     const [main, sub] = dayLabel(d.day, d.offset);
+    let tag = "";
+    if (winter && isFog) tag = "狙い目";
+    else if (isPond && isFog) tag = "両方狙い目";
+    else if (isPond) tag = "池が狙い目";
+    else if (isFog) tag = "霧が狙い目";
     label.innerHTML =
       `<span class="fc-main">${main}</span><span class="fc-sub">${sub}</span>` +
-      (d.day === best ? '<span class="fc-tag">狙い目</span>' : "");
+      (tag ? `<span class="fc-tag">${tag}</span>` : "");
     row.appendChild(label);
 
-    if (!winter) row.appendChild(fcCell(d.pond, "pond"));
-    row.appendChild(fcCell(d.fog, "fog"));
+    if (!winter) row.appendChild(fcCell(d.pond, "pond", isPond));
+    row.appendChild(fcCell(d.fog, "fog", isFog));
     grid.appendChild(row);
   }
 
   const lead = document.getElementById("forecast-lead");
-  if (lead) {
-    lead.textContent = winter
-      ? "結氷期は青い池のスコアをお休みしています。朝霧・雲海の見込みだけお出しします。"
-      : best
-        ? `出かける日を選ぶための、数日先までのスコアです。いまのところ${bestLabel(best, days)}が狙い目。`
-        : "出かける日を選ぶための、数日先までのスコアです。";
-  }
+  if (lead) lead.textContent = leadText(days, bestPond, bestFog, winter);
   card.classList.remove("hidden");
 }
 
