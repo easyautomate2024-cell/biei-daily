@@ -211,7 +211,7 @@ def encode(frames):
         # framerate フィルタが駒と駒の中間コマを混合で作る=ディゾルブ。
         # 硬い切り替えより、季節が溶けるように変わって見える
         "-vf", f"framerate=fps={OUT_FPS},scale=trunc(iw/2)*2:trunc(ih/2)*2",
-        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "27",
+        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "29",
         "-movflags", "+faststart", "-an",
         VIDEO_PATH,
     ]
