@@ -55,6 +55,13 @@
 <link rel="stylesheet" href="style.css?v=13">
 <style>
 /* satellite.html 専用スタイル(共有CSSは変更しない) */
+
+/* ヒーロー背景は同じ丘の夏と冬を斜めに合成した固定画像(座標が揃うので区画が連続する) */
+.hero.sat-hero {
+  background:
+    linear-gradient(180deg, rgba(10, 20, 30, 0.45) 0%, rgba(10, 20, 30, 0.18) 55%, rgba(10, 20, 30, 0.42) 100%),
+    url("photos/sat/hero-seasons.jpg") center 38% / cover no-repeat;
+}
 .sat-status {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   margin-bottom: 14px;
@@ -198,10 +205,11 @@
     </div>
   </div>
 </nav>
-<header class="hero small">
+<header class="hero photo sat-hero" id="sat-hero">
   <p class="hero-eyebrow">Satellite View</p>
   <h1>衛星が見た美瑛</h1>
   <p class="hero-sub">宇宙から見る、いちばん新しい晴れた日のパッチワーク</p>
+  <div class="now">同じ丘 — 夏(2026.8)と冬(2026.2)</div>
 </header>
 
 <main>
