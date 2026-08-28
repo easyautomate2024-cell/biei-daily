@@ -2,3 +2,8 @@
 *.log
 __pycache__/
 *.pyc
+
+# 動画の元素材(サイトには置かない)
+photos/*.zip
+photos/*.MOV
+photos/*.mov

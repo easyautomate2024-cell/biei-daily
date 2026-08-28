@@ -52,7 +52,7 @@
   gtag('js', new Date());
   gtag('config', 'G-2DT79T20E6');
 </script>
-<link rel="stylesheet" href="style.css?v=11">
+<link rel="stylesheet" href="style.css?v=12">
 <style>
 /* satellite.html 専用スタイル(共有CSSは変更しない) */
 .sat-status {
@@ -167,6 +167,15 @@
   border: 1px solid var(--border2);
   display: block;
 }
+.tl-video {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  border: 1px solid var(--border2);
+  display: block;
+  background: var(--bg);
+}
+.tl-note { margin-top: 10px !important; }
 .sat-caption { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
 .sat-note-list { margin: 10px 0 0; padding-left: 20px; }
 .sat-note-list li { margin: 7px 0; font-size: 14.5px; color: var(--muted); }
@@ -214,6 +223,16 @@
     </div>
     <img class="sat-img" id="img-hills" src="photos/sat/sat-hills.jpg" alt="衛星から見た美瑛の丘と市街地(10m解像度)。畑のパッチワークと町並み">
     <p class="sat-caption">上が北。中央上の白い集まりが美瑛の市街地、ベージュ〜金色の区画は色づいた麦畑、緑はビート・豆・じゃがいもなど。10m解像度(1ピクセル=10m四方)。</p>
+  </section>
+
+  <section class="card hidden" id="tl-card">
+    <p class="eyebrow">Time Lapse</p>
+    <h2>この1年の丘</h2>
+    <p class="sat-caption" style="margin: 0 0 14px;" id="tl-intro">読み込み中…</p>
+    <video class="tl-video" id="tl-video" autoplay muted loop playsinline preload="none"
+           poster="photos/sat/timelapse-poster.jpg" width="720" height="861"
+           aria-label="美瑛の丘の衛星画像を1年ぶん並べたタイムラプス"></video>
+    <p class="sat-caption tl-note">10日ごとに、いちばん晴れた日を1枚ずつ選んで並べています。黒い土から緑、金色、刈り取り、そして雪へ——畑の色が1年かけて塗り替わっていきます。音はありません。</p>
   </section>
 
   <section class="card hidden" id="yc-card">
@@ -361,7 +380,42 @@ function renderPasses(passes) {
     + (blank ? `直近5回のうち<b>${blank}回は一面の雲</b>で、丘は1ピクセルも写っていません。` : "");
 }
 
+// 1年のタイムラプス。動画は重いので、見える位置まで来てから読み込む
+async function setupTimelapse() {
+  let meta;
+  try {
+    const res = await fetch("data/timelapse.json?nc=" + Date.now());
+    if (!res.ok) return;
+    meta = await res.json();
+  } catch (e) {
+    return;
+  }
+  if (!meta.count || meta.count < 4) return;
+
+  const card = document.getElementById("tl-card");
+  const video = document.getElementById("tl-video");
+  document.getElementById("tl-intro").innerHTML =
+    `<b>${meta.from.slice(0, 4)}年${md(meta.from)}</b>から<b>${md(meta.to)}</b>まで、` +
+    `晴れた日の衛星画像${meta.count}枚を並べました。`;
+  card.classList.remove("hidden");
+
+  const load = () => {
+    video.src = `photos/sat/timelapse.mp4?d=${meta.built_at.slice(0, 10)}`;
+    video.load();
+    video.play().catch(() => {});   // 自動再生が止められても静止画は出る
+  };
+  if ("IntersectionObserver" in window) {
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) { io.disconnect(); load(); }
+    }, { rootMargin: "200px" });
+    io.observe(card);
+  } else {
+    load();
+  }
+}
+
 (async () => {
+  setupTimelapse();
   try {
     const res = await fetch("data/satellite.json?nc=" + Date.now());
     const meta = await res.json();

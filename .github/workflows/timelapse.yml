@@ -1,0 +1,46 @@
+name: 1年のタイムラプスを更新
+
+on:
+  schedule:
+    - cron: "40 20 * * 0"   # 毎週月曜 05:40 JST
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: timelapse
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      GDAL_HTTP_MAX_RETRY: "3"
+      GDAL_HTTP_RETRY_DELAY: "5"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 依存ライブラリ
+        run: pip install --quiet rasterio pillow numpy
+
+      - name: 駒を追加して動画を作り直す
+        run: python scripts/build_timelapse.py
+
+      - name: 変更があればコミット
+        run: |
+          git add photos/sat/tl photos/sat/timelapse.mp4 photos/sat/timelapse-poster.jpg data/timelapse.json
+          if git diff --cached --quiet; then
+            echo "変更なし"
+          else
+            MSG=$(python -c "import json; m=json.load(open('data/timelapse.json')); print(f\"タイムラプス更新: {m['from']}〜{m['to']}（{m['count']}駒）\")")
+            git config user.name "biei-daily-bot"
+            git config user.email "easy.automate2024@gmail.com"
+            git commit -m "$MSG"
+            git pull --rebase
+            git push
+          fi

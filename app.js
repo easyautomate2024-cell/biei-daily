@@ -679,7 +679,26 @@ async function loadSatTeaser() {
   } catch (e) { /* 失敗時は既定文言のまま */ }
 }
 
+// ヒーローの背景動画。通信量に配慮して、読み込みは表示が落ち着いてから
+function loadHeroVideo() {
+  const v = document.getElementById("hero-video");
+  if (!v) return;
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const saveData = navigator.connection && navigator.connection.saveData;
+  if (reduce || saveData) return;   // 静止画のままにする
+
+  const start = () => {
+    v.src = "photos/hero-loop.mp4";
+    v.load();
+    const p = v.play();
+    if (p) p.catch(() => {});       // 自動再生が拒否されても静止画が残る
+  };
+  if (document.readyState === "complete") start();
+  else window.addEventListener("load", start, { once: true });
+}
+
 async function main() {
+  loadHeroVideo();
   renderKoyomi();
   loadVolcano();
   loadBakushu();

@@ -60,11 +60,24 @@ nav.site-nav {
   background: linear-gradient(180deg, #ffffff 0%, #f5f5f7 100%);
   border-bottom: 1px solid var(--border);
 }
+/* 動画が読めない環境では、その1コマ目を静止画として敷く */
 .hero.photo {
-  background:
-    linear-gradient(180deg, rgba(15, 35, 55, 0.5) 0%, rgba(15, 35, 55, 0.25) 55%, rgba(15, 35, 55, 0.45) 100%),
-    url("photos/hero-pond.jpg") center 60% / cover no-repeat;
+  background: url("photos/hero-poster.jpg") center center / cover no-repeat;
+  overflow: hidden;
 }
+.hero-video {
+  position: absolute; inset: 0; z-index: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  border: 0;
+}
+/* 文字を読ませるための覆い。動画・静止画のどちらの上にも同じようにかかる */
+.hero.photo::after {
+  content: "";
+  position: absolute; inset: 0; z-index: 1;
+  background: linear-gradient(180deg, rgba(15, 35, 55, 0.5) 0%, rgba(15, 35, 55, 0.25) 55%, rgba(15, 35, 55, 0.45) 100%);
+}
+.hero > *:not(.hero-video) { position: relative; z-index: 2; }
 .hero-eyebrow {
   font-size: 12px; font-weight: 600;
   letter-spacing: 2px; text-transform: uppercase;
