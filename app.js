@@ -11,7 +11,10 @@ const API =
   `?latitude=${LAT}&longitude=${LON}` +
   "&daily=sunrise,sunset,temperature_2m_max,temperature_2m_min" +
   "&hourly=cloud_cover,precipitation,wind_speed_10m,relative_humidity_2m,temperature_2m,dew_point_2m" +
-  "&past_days=2&forecast_days=2&timezone=Asia%2FTokyo";
+  "&past_days=2&forecast_days=7&timezone=Asia%2FTokyo";
+
+// 「この先の見頃カレンダー」で先を見る日数(明日から数えて)
+const FORECAST_DAYS = 5;
 
 // Asia/Tokyo の YYYY-MM-DD（閲覧者のタイムゾーンに依存させない）
 function tokyoDateStr(offsetDays = 0) {
@@ -167,6 +170,104 @@ function renderScore(prefix, score, verdictFn, reasons) {
     li.textContent = text;
     ul.appendChild(li);
   }
+}
+
+// ── この先の見頃カレンダー ──────────────────────────────
+const WEEKDAY = ["日", "月", "火", "水", "木", "金", "土"];
+
+function hasDay(hourly, day) {
+  return hourly.time.some((t) => t.startsWith(day));
+}
+
+function dayLabel(day, offset) {
+  const d = new Date(`${day}T00:00:00`);
+  const md = `${d.getMonth() + 1}/${d.getDate()}`;
+  const wd = `(${WEEKDAY[d.getDay()]})`;
+  if (offset === 1) return ["明日", `${md}${wd}`];
+  if (offset === 2) return ["明後日", `${md}${wd}`];
+  return [md, wd];
+}
+
+// 「明日」「8/31(月)」のように、文章に入れて読める形にする
+function bestLabel(day, days) {
+  const d = days.find((x) => x.day === day);
+  const [main, sub] = dayLabel(day, d.offset);
+  return d.offset <= 2 ? main : main + sub;
+}
+
+function fcCell(score, kind) {
+  const cell = document.createElement("div");
+  cell.className = `fc-cell ${kind}`;
+  const bar = document.createElement("div");
+  bar.className = "fc-bar";
+  bar.style.setProperty("--pct", score);
+  const val = document.createElement("span");
+  val.className = "fc-val";
+  val.textContent = score;
+  cell.append(bar, val);
+  return cell;
+}
+
+// winter=true(結氷期)のときは青い池の列を出さない
+function renderForecast(hourly, winter) {
+  const card = document.getElementById("forecast-card");
+  const grid = document.getElementById("forecast-grid");
+  if (!card || !grid) return;
+
+  const days = [];
+  for (let i = 1; i <= FORECAST_DAYS; i++) {
+    const day = tokyoDateStr(i);
+    if (!hasDay(hourly, day)) break;
+    days.push({
+      offset: i,
+      day,
+      fog: fogScore(hourly, tokyoDateStr(i - 1), day).score,
+      pond: winter ? null : pondScore(hourly, day).score,
+    });
+  }
+  if (!days.length) return;   // 予報が取れないときは何も出さない
+
+  // 狙い目の日(冬は朝霧で判断)。低調な週に無理に印はつけない
+  const key = winter ? "fog" : "pond";
+  const top = days.reduce((a, b) => (b[key] > a[key] ? b : a));
+  const best = top[key] >= 60 ? top.day : null;
+
+  grid.className = `forecast-grid${winter ? " winter" : ""}`;
+  grid.innerHTML = "";
+
+  const head = document.createElement("div");
+  head.className = "fc-row fc-head";
+  head.innerHTML = winter
+    ? "<span></span><span>朝霧・雲海</span>"
+    : "<span></span><span>青い池</span><span>朝霧・雲海</span>";
+  grid.appendChild(head);
+
+  for (const d of days) {
+    const row = document.createElement("div");
+    row.className = "fc-row" + (d.day === best ? " best" : "");
+
+    const label = document.createElement("div");
+    label.className = "fc-day";
+    const [main, sub] = dayLabel(d.day, d.offset);
+    label.innerHTML =
+      `<span class="fc-main">${main}</span><span class="fc-sub">${sub}</span>` +
+      (d.day === best ? '<span class="fc-tag">狙い目</span>' : "");
+    row.appendChild(label);
+
+    if (!winter) row.appendChild(fcCell(d.pond, "pond"));
+    row.appendChild(fcCell(d.fog, "fog"));
+    grid.appendChild(row);
+  }
+
+  const lead = document.getElementById("forecast-lead");
+  if (lead) {
+    lead.textContent = winter
+      ? "結氷期は青い池のスコアをお休みしています。朝霧・雲海の見込みだけお出しします。"
+      : best
+        ? `出かける日を選ぶための、数日先までのスコアです。いまのところ${bestLabel(best, days)}が狙い目。`
+        : "出かける日を選ぶための、数日先までのスコアです。";
+  }
+  card.classList.remove("hidden");
 }
 
 function hhmm(iso) {
@@ -603,6 +704,8 @@ async function main() {
 
   const fog = fogScore(hourly, today, tomorrow);
   renderScore("fog", fog.score, fogVerdict, fog.reasons);
+
+  renderForecast(hourly, !!winter);
 
   // 日の出・日の入り（daily.time は past_days ぶん前から始まる）
   const dTomorrow = data.daily.time.indexOf(tomorrow);

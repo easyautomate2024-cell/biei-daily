@@ -368,6 +368,37 @@ code {
   margin-bottom: 16px;
   font-size: 14px;
 }
+/* ===== この先の見頃カレンダー ===== */
+.forecast-lead { font-size: 14px; color: var(--muted); margin-bottom: 16px; }
+.forecast-grid {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr) minmax(0, 1fr);
+  gap: 2px 14px; align-items: center;
+}
+.forecast-grid.winter { grid-template-columns: 82px minmax(0, 1fr); }
+.fc-row { display: contents; }
+.fc-head span { font-size: 11px; color: #9b9ba0; }
+.fc-day { padding: 8px 0; }
+.fc-main { display: block; font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
+.fc-sub { font-size: 11px; color: #9b9ba0; }
+.fc-cell { display: flex; align-items: center; gap: 8px; padding: 8px 0; }
+.fc-bar { --pct: 0; flex: 1; height: 6px; border-radius: 3px; background: #e8e8ed; }
+.fc-bar::before {
+  content: ""; display: block; height: 6px; border-radius: 3px;
+  width: calc(var(--pct) * 1%); background: var(--accent);
+}
+.fc-cell.fog .fc-bar::before { background: var(--muted); }
+.fc-val {
+  font-size: 13px; font-weight: 600; min-width: 20px;
+  text-align: right; font-variant-numeric: tabular-nums;
+}
+.fc-row.best .fc-main { color: var(--accent); }
+.fc-tag {
+  display: inline-block; margin-top: 3px; padding: 1px 6px;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.02em;
+  color: var(--accent); background: #eaf3fd; border-radius: 4px;
+}
+
 .hidden { display: none; }
 
 /* ===== FOOTER ===== */
