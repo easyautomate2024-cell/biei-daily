@@ -108,6 +108,7 @@
   font-size: 11.5px; font-weight: 700; margin: 0; color: #a8601c;
 }
 .pass-item.used .pass-verdict { color: #1a7f4e; }
+.pass-item.clear .pass-verdict { color: #4a7fa5; }
 .pass-item .pass-num {
   font-size: 11.5px; color: var(--muted); margin: 2px 0 0;
   font-variant-numeric: tabular-nums;
@@ -363,11 +364,16 @@ function renderPasses(passes) {
     return;
   }
   grid.innerHTML = passes.map((p) => {
-    const verdict = p.used ? "採用中" : "雲で見送り";
+    // 晴れていたのに未採用の日(=もっと新しい晴れに交代した日)を
+    // 「雲で見送り」と呼ぶと嘘になる。3通りに分ける
+    const verdict = p.used ? "採用中"
+      : p.visible >= 95 ? "晴れ(新しい日と交代)"
+      : "雲で見送り";
     const seen = p.visible >= 60 ? "よく見えた"
       : p.visible >= 15 ? "雲の切れ間からわずかに"
       : "地表は見えず";
-    return `<figure class="pass-item ${p.used ? "used" : ""}">
+    const cls = p.used ? "used" : p.visible >= 95 ? "clear" : "";
+    return `<figure class="pass-item ${cls}">
       <img src="photos/sat/${p.thumb}" width="420" height="502" loading="lazy"
            alt="${md(p.date)}に衛星が撮影した美瑛。${seen}">
       <p class="pass-date">${md(p.date)}</p>
@@ -376,7 +382,7 @@ function renderPasses(passes) {
     </figure>`;
   }).join("");
   const blank = passes.filter((p) => p.visible < 1).length;
-  note.innerHTML = `「地表が見えた割合」は、切り出した美瑛エリアのうち真っ白(雲)でなかった部分の割合です。`
+  note.innerHTML = `「地表が見えた割合」は、切り出した美瑛エリアのうち真っ白(雲)でなかった部分の割合です。晴れた通過が複数あるときは、いちばん新しい日を掲載します。`
     + (blank ? `直近5回のうち<b>${blank}回は一面の雲</b>で、丘は1ピクセルも写っていません。` : "");
 }
 
