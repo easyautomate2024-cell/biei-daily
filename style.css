@@ -17,7 +17,8 @@ html { scroll-behavior: smooth; }
 
 body {
   font-family: system-ui, -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif;
-  background: var(--bg-white);
+  /* ページを薄いグレーに、カードを白にして浮かせる(mono labo と同じ考え方) */
+  background: var(--bg);
   color: var(--text);
   line-height: 1.6;
   overflow-x: hidden;
@@ -104,7 +105,7 @@ nav.site-nav {
 .back:hover { color: var(--text); }
 
 /* ===== LAYOUT ===== */
-main { max-width: 1000px; margin: 0 auto; padding: 48px 20px 96px; }
+main { max-width: 1000px; margin: 0 auto; padding: 56px 20px 96px; }
 
 .cards {
   display: grid;
@@ -115,9 +116,9 @@ main { max-width: 1000px; margin: 0 auto; padding: 48px 20px 96px; }
 .card {
   background: var(--bg-white);
   border: 1px solid var(--border);
-  border-radius: 18px;
-  padding: 26px 28px;
-  margin-bottom: 20px;
+  border-radius: 20px;
+  padding: 30px 32px;
+  margin-bottom: 24px;
   transition: box-shadow 0.25s, transform 0.25s;
 }
 .card:hover { box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08); transform: translateY(-2px); }
@@ -126,19 +127,23 @@ main { max-width: 1000px; margin: 0 auto; padding: 48px 20px 96px; }
   font-size: 11px; font-weight: 700;
   color: var(--accent);
   letter-spacing: 1.5px; text-transform: uppercase;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
-.card h2 { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 16px; }
+.card h2 {
+  font-size: 32px; font-weight: 700;
+  letter-spacing: -0.03em; line-height: 1.2;
+  margin-bottom: 14px;
+}
 .card h3 { margin: 22px 0 8px; font-size: 14px; font-weight: 700; color: var(--text); }
 .card p { font-size: 14.5px; color: var(--muted); }
 .card p strong { color: var(--text); }
 
 .card-photo {
-  width: calc(100% + 56px);
-  margin: -26px -28px 20px;
+  width: calc(100% + 64px);
+  margin: -30px -32px 24px;
   height: 190px;
   object-fit: cover;
-  border-radius: 17px 17px 0 0;
+  border-radius: 19px 19px 0 0;
   display: block;
 }
 .card-photo.wide { height: 230px; object-position: center 78%; }
@@ -369,7 +374,7 @@ code {
   font-size: 14px;
 }
 /* ===== この先の見頃カレンダー ===== */
-.forecast-lead { font-size: 14px; color: var(--muted); margin-bottom: 16px; }
+.forecast-lead { font-size: 15px; color: var(--muted); margin-bottom: 18px; }
 .forecast-grid {
   display: grid;
   grid-template-columns: 82px minmax(0, 1fr) minmax(0, 1fr);
@@ -433,6 +438,7 @@ footer a:hover { color: var(--text); }
   .nav-links a:not(.nav-cta) { font-size: 13px; }
   .hero { padding: 64px 18px 56px; }
   main { padding: 28px 14px 64px; }
-  .card { padding: 22px 20px; }
-  .card-photo { width: calc(100% + 40px); margin: -22px -20px 18px; }
+  .card { padding: 24px 20px; }
+  .card h2 { font-size: 26px; }
+  .card-photo { width: calc(100% + 40px); margin: -24px -20px 20px; }
 }
