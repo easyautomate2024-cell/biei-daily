@@ -44,7 +44,7 @@ WINTER_MONTHS = (12, 1, 2, 3)
 WINTER_MAX_CLOUD = 45
 WINTER_MIN_TEXTURE = 12
 FRAME_WIDTH = 720
-FPS = 2               # 1駒0.5秒。書き出し時に駒間をディゾルブでつなぐ
+FPS = 1.25            # 1駒0.8秒。書き出し時に駒間をディゾルブでつなぐ
 OUT_FPS = 24          # 最終動画のフレームレート(中間コマは前後の駒の混合)
 
 
