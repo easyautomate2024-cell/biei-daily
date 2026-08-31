@@ -1,0 +1,3 @@
+# 追記専用のログはスクリプトが LF で書き足すので、Windows でも CRLF に変換しない
+# (変換されると1つのファイルに LF 行と CRLF 行が混ざる)
+data/forecast-log.jsonl -text eol=lf
