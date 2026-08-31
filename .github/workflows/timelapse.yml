@@ -28,6 +28,14 @@ jobs:
       - name: 依存ライブラリ
         run: pip install --quiet rasterio pillow numpy
 
+      # ubuntu-latest(24.04)のランナーに ffmpeg は入っていない。
+      # 入れ忘れると動画の書き出しだけが落ちる(駒の生成までは成功する)ので注意。
+      - name: ffmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          ffmpeg -version | head -1
+
       - name: 駒を追加して動画を作り直す
         run: python scripts/build_timelapse.py
 

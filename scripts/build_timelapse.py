@@ -215,7 +215,13 @@ def encode(frames):
         "-movflags", "+faststart", "-an",
         VIDEO_PATH,
     ]
-    r = subprocess.run(cmd, capture_output=True, text=True)
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True)
+    except FileNotFoundError:
+        # 生のトレースバックだと原因が分かりにくいので、何が無いのかを名指しする
+        os.remove(listfile)
+        print("ffmpeg が見つかりません。ワークフローの ffmpeg 導入手順を確認してください。")
+        return False
     os.remove(listfile)
     if r.returncode != 0:
         print(f"ffmpeg 失敗: {r.stderr.strip()[:300]}")
