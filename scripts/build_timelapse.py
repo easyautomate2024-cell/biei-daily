@@ -125,21 +125,35 @@ def build_frames(meta):
              if os.path.exists(os.path.join(FRAME_DIR, f["file"]))}
     filled = {bucket_of(d, origin) for d in known}
 
+    # 一度落として「雲で使えない」と分かったシーンは二度と変わらないので覚えておく。
+    # 覚えないと、晴れた駒が1枚も採れない期間の候補を毎週ぜんぶ落とし直すことになる。
+    rejected = {r["id"]: r for r in meta.get("rejected", [])}
+
     try:
         items = search_scenes(start, end)
     except Exception as e:
         print(f"シーン検索に失敗: {e}")
         return None
-    print(f"直近{LOOKBACK_DAYS}日の通過: {len(items)}回 / 既存の駒 {len(known)}枚")
 
     # 期間ごとに候補をまとめ、雲の少ない順に試す(広域雲量は目安にしかならない)
     buckets = {}
+    skipped = 0
     for f in items:
         date = f["properties"]["datetime"][:10]
         b = bucket_of(date, origin)
         if b in filled:
             continue
+        if f["id"] in rejected:
+            skipped += 1
+            continue
         buckets.setdefault(b, []).append(f)
+    print(f"直近{LOOKBACK_DAYS}日の通過: {len(items)}回 / 既存の駒 {len(known)}枚 / "
+          f"判定済みで再取得を省いたシーン {skipped}件")
+
+    def reject(scene, date, why):
+        """恒久的に使えないシーンとして記録する。
+        通信エラーのような一時的な失敗をここに入れてはいけない(永久に除外されてしまう)"""
+        rejected[scene["id"]] = {"id": scene["id"], "date": date, "why": why}
 
     added = 0
     for b in sorted(buckets):
@@ -148,24 +162,29 @@ def build_frames(meta):
             is_winter = int(date[5:7]) in WINTER_MONTHS
             cloud = f["properties"].get("eo:cloud_cover", 100)
             if is_winter and cloud > WINTER_MAX_CLOUD:
+                reject(f, date, f"冬の雲量{cloud:.0f}%")
                 continue
             try:
                 arr = read_crop(f["assets"]["visual"]["href"], HILLS_BBOX)
             except Exception as e:
+                # 通信の失敗かもしれないので覚えない。次回また試す
                 print(f"  {date}: 切り出し失敗 ({e})")
                 continue
             if arr.size == 0:
+                reject(f, date, "切り出しが空")
                 continue
             vis = visible_pct(arr)
             if is_winter:
                 texture = float(arr[:, :, :3].mean(axis=2).std())
                 if texture < WINTER_MIN_TEXTURE:
                     print(f"  {date}: きめ{texture:.1f}は雲の一面。次の候補へ。")
+                    reject(f, date, f"きめ{texture:.1f}")
                     continue
                 rendered = render_winter(f)   # 白飛びしないよう生データから現像
                 if rendered is not None:
                     arr = rendered
             elif vis < MIN_VISIBLE:
+                reject(f, date, f"地表可視{vis}%")
                 continue
 
             img = Image.fromarray(arr[:, :, :3])
@@ -190,8 +209,12 @@ def build_frames(meta):
             os.remove(path)
             print(f"  期間外の駒を削除: {old['file']}")
 
-    print(f"駒を{added}枚追加。合計{len(known)}枚")
-    return [known[d] for d in sorted(known)]
+    # 判定済みの記録も期間から外れたら捨てる(そのまま貯め続けると際限なく増える)
+    kept = sorted((r for r in rejected.values() if r["date"] >= limit),
+                  key=lambda r: (r["date"], r["id"]))
+
+    print(f"駒を{added}枚追加。合計{len(known)}枚 / 判定済みシーン{len(kept)}件")
+    return [known[d] for d in sorted(known)], kept
 
 
 def encode(frames):
@@ -234,23 +257,38 @@ def encode(frames):
     return True
 
 
+def save_meta(meta):
+    os.makedirs(os.path.dirname(META_PATH), exist_ok=True)
+    with open(META_PATH, "w", encoding="utf-8") as f:
+        json.dump(meta, f, ensure_ascii=False, indent=2)
+
+
 def main():
     meta = load_meta()
-    frames = build_frames(meta)
-    if frames is None:
+    built = build_frames(meta)
+    if built is None:
         return 1
+    frames, rejected = built
+
+    # 駒と判定の記録は、動画の書き出しが失敗しても残す。
+    # ここで捨てると、落としたばかりの駒を次回また落とし直すことになる。
+    # 一方 from/to/count/built_at はサイトが今ある動画の説明として読む値なので、
+    # 書き出しに成功したときだけ差し替える(でないと「52枚」と出しながら22枚の
+    # 動画を再生することになる)
+    meta["frames"] = frames
+    meta["rejected"] = rejected
+    save_meta(meta)
+
     if not encode(frames):
+        print("駒と判定の記録は残したので、次回は続きから作り直せます。")
         return 1
 
-    meta["frames"] = frames
     meta["from"] = frames[0]["date"]
     meta["to"] = frames[-1]["date"]
     meta["count"] = len(frames)
     meta["fps"] = FPS
     meta["built_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    os.makedirs(os.path.dirname(META_PATH), exist_ok=True)
-    with open(META_PATH, "w", encoding="utf-8") as f:
-        json.dump(meta, f, ensure_ascii=False, indent=2)
+    save_meta(meta)
     print("timelapse.json 更新完了")
     return 0
 

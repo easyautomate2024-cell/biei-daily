@@ -39,7 +39,10 @@ jobs:
       - name: 駒を追加して動画を作り直す
         run: python scripts/build_timelapse.py
 
+      # 書き出しが失敗しても、そこまでに落とした駒は残して次回に引き継ぐ。
+      # ジョブ自体は前の手順の失敗で red のままなので、失敗の通知は届く。
       - name: 変更があればコミット
+        if: always()
         run: |
           git add photos/sat/tl photos/sat/timelapse.mp4 photos/sat/timelapse-poster.jpg data/timelapse.json
           if git diff --cached --quiet; then
