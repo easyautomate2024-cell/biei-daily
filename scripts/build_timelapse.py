@@ -127,6 +127,10 @@ def build_frames(meta):
 
     # 一度落として「雲で使えない」と分かったシーンは二度と変わらないので覚えておく。
     # 覚えないと、晴れた駒が1枚も採れない期間の候補を毎週ぜんぶ落とし直すことになる。
+    #
+    # 注意: 記録には「その時のしきい値」での判定が焼き付く。WINTER_MAX_CLOUD などを
+    # 緩めたときは timelapse.json の "rejected" を空にして再評価させること。
+    # どのシーンが境界近くだったかは why の判定値で後からでも分かる。
     rejected = {r["id"]: r for r in meta.get("rejected", [])}
 
     try:
@@ -238,14 +242,16 @@ def encode(frames):
         "-movflags", "+faststart", "-an",
         VIDEO_PATH,
     ]
+    # 一覧ファイルは駒ディレクトリの中にあるので、どう失敗しても必ず消す。
+    # 残るとワークフローの if: always() コミットに拾われてリポジトリに入ってしまう
     try:
         r = subprocess.run(cmd, capture_output=True, text=True)
     except FileNotFoundError:
         # 生のトレースバックだと原因が分かりにくいので、何が無いのかを名指しする
-        os.remove(listfile)
         print("ffmpeg が見つかりません。ワークフローの ffmpeg 導入手順を確認してください。")
         return False
-    os.remove(listfile)
+    finally:
+        os.remove(listfile)
     if r.returncode != 0:
         print(f"ffmpeg 失敗: {r.stderr.strip()[:300]}")
         return False
