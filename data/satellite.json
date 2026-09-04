@@ -5,6 +5,14 @@
   "updated_at": "2026-08-30T05:32:21Z",
   "passes": [
     {
+      "date": "2026-09-03",
+      "scene_id": "S2B_54TXP_20260903_0_L2A",
+      "cloud": 99.7,
+      "visible": 0.0,
+      "thumb": "pass-2026-09-03.jpg",
+      "used": false
+    },
+    {
       "date": "2026-08-31",
       "scene_id": "S2A_54TXP_20260831_1_L2A",
       "cloud": 68.5,
@@ -35,17 +43,9 @@
       "visible": 28.3,
       "thumb": "pass-2026-08-19.jpg",
       "used": false
-    },
-    {
-      "date": "2026-08-14",
-      "scene_id": "S2B_54TXP_20260814_0_L2A",
-      "cloud": 38.8,
-      "visible": 98.3,
-      "thumb": "pass-2026-08-14.jpg",
-      "used": false
     }
   ],
-  "checked_at": "2026-09-03T04:41:00Z",
+  "checked_at": "2026-09-04T04:43:03Z",
   "years": [
     {
       "year": 2025,
