@@ -49,10 +49,30 @@ MAX_BLACK = 0.02      # 真っ黒(撮影範囲の端でデータが無い)がこ
 HAZE_MIN_STD = 28     # 夏場でもきめがこれ未満なら薄いもやの一面とみなして捨てる
                       # 実例: 2025-09-08 は白判定0.3%なのに全体が乳白色(std21.5)。
                       # 正常な駒は34〜63
+
+# 衛星付属の分類レイヤー(SCL)で、散らばった雲と雲の影を数える。
+# 半透明の雲は白判定もきめ判定もすり抜ける(実例: 2025-10-25)ので、これが本命。
+# クラス10「薄い巻雲」は刈り取り後の明るい土や雪を誤検出する(雲ひとつない
+# 2025-09-28で84%)ため数えない。3=雲の影 8=雲(中確度) 9=雲(高確度)。
+# 実測: 不良の3駒 12.7/15.2/21.9% / 目視で問題なしの6/05 11.5%(明るい土の誤検出)
+SCL_BAD_CLASSES = (3, 8, 9)
+MAX_SCL_CLOUD = 0.12
 FRAME_WIDTH = 720
 FPS = 1 / 1.5         # 1駒1.5秒。書き出し時に駒間をディゾルブでつなぐ
 OUT_FPS = 24          # 最終動画のフレームレート(中間コマは前後の駒の混合)
 
+
+
+def scl_cloud_fraction(f):
+    """美瑛の切り出し範囲のうち、雲・雲の影と分類された画素の割合。読めなければ None"""
+    try:
+        scl = read_crop(f["assets"]["scl"]["href"], HILLS_BBOX)[:, :, 0]
+    except Exception as e:
+        print(f"  SCL読めず ({e})。この判定は飛ばす")
+        return None
+    if scl.size == 0:
+        return None
+    return float(np.isin(scl, SCL_BAD_CLASSES).mean())
 
 
 def render_winter(f):
@@ -188,6 +208,12 @@ def build_frames(meta):
             if black > MAX_BLACK:
                 print(f"  {date}: 撮影範囲の端(黒{black:.0%})。次の候補へ。")
                 reject(f, date, f"黒{black:.0%}")
+                continue
+
+            cloudy = scl_cloud_fraction(f)
+            if cloudy is not None and cloudy > MAX_SCL_CLOUD:
+                print(f"  {date}: 散らばった雲・影が{cloudy:.0%}。次の候補へ。")
+                reject(f, date, f"雲・影{cloudy:.0%}")
                 continue
 
             vis = visible_pct(arr)
