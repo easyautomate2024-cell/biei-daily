@@ -43,6 +43,12 @@ MIN_VISIBLE = 90      # 地表がこれ以上見えた日だけ採用(雲の日�
 WINTER_MONTHS = (12, 1, 2, 3)
 WINTER_MAX_CLOUD = 45
 WINTER_MIN_TEXTURE = 12
+
+MAX_BLACK = 0.02      # 真っ黒(撮影範囲の端でデータが無い)がこれ以上あれば捨てる
+                      # 実例: 2025-09-28 は14.8%が黒く、右上が欠けて見えた
+HAZE_MIN_STD = 28     # 夏場でもきめがこれ未満なら薄いもやの一面とみなして捨てる
+                      # 実例: 2025-09-08 は白判定0.3%なのに全体が乳白色(std21.5)。
+                      # 正常な駒は34〜63
 FRAME_WIDTH = 720
 FPS = 1 / 1.5         # 1駒1.5秒。書き出し時に駒間をディゾルブでつなぐ
 OUT_FPS = 24          # 最終動画のフレームレート(中間コマは前後の駒の混合)
@@ -177,9 +183,16 @@ def build_frames(meta):
             if arr.size == 0:
                 reject(f, date, "切り出しが空")
                 continue
+            g = arr[:, :, :3].mean(axis=2)
+            black = float((g <= 8).mean())
+            if black > MAX_BLACK:
+                print(f"  {date}: 撮影範囲の端(黒{black:.0%})。次の候補へ。")
+                reject(f, date, f"黒{black:.0%}")
+                continue
+
             vis = visible_pct(arr)
+            texture = float(g.std())
             if is_winter:
-                texture = float(arr[:, :, :3].mean(axis=2).std())
                 if texture < WINTER_MIN_TEXTURE:
                     print(f"  {date}: きめ{texture:.1f}は雲の一面。次の候補へ。")
                     reject(f, date, f"きめ{texture:.1f}")
@@ -187,9 +200,14 @@ def build_frames(meta):
                 rendered = render_winter(f)   # 白飛びしないよう生データから現像
                 if rendered is not None:
                     arr = rendered
-            elif vis < MIN_VISIBLE:
-                reject(f, date, f"地表可視{vis}%")
-                continue
+            else:
+                if vis < MIN_VISIBLE:
+                    reject(f, date, f"地表可視{vis}%")
+                    continue
+                if texture < HAZE_MIN_STD:
+                    print(f"  {date}: きめ{texture:.1f}は薄いもや。次の候補へ。")
+                    reject(f, date, f"もや(きめ{texture:.1f})")
+                    continue
 
             img = Image.fromarray(arr[:, :, :3])
             img = img.resize(
