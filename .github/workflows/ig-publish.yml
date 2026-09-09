@@ -1,0 +1,50 @@
+name: IG投稿(承認後)
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  publish:
+    # [IG投稿案] のIssueに、リポジトリ所有者本人が「OK」とコメントしたときだけ動く
+    if: >
+      startsWith(github.event.issue.title, '[IG投稿案]') &&
+      github.event.comment.user.login == 'easyautomate2024-cell' &&
+      (startsWith(github.event.comment.body, 'OK') ||
+       startsWith(github.event.comment.body, 'ok') ||
+       startsWith(github.event.comment.body, '承認'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instagramへ投稿
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: python scripts/ig_publish.py
+
+      # トークンは60日で切れる。投稿のたびに延長し、新しいトークンで秘密情報を上書きする。
+      # GH_PAT(secrets管理権限つき)が未設定の間は延長だけ行い、期限を出力する
+      - name: アクセストークンを延長
+        if: always()
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          RES=$(curl -s "https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${IG_ACCESS_TOKEN}")
+          NEW=$(echo "$RES" | python -c "import json,sys; d=json.load(sys.stdin); print(d.get('access_token',''))")
+          DAYS=$(echo "$RES" | python -c "import json,sys; d=json.load(sys.stdin); print(d.get('expires_in',0)//86400)")
+          if [ -z "$NEW" ]; then echo "延長に失敗: $RES"; exit 0; fi
+          echo "トークンを延長しました(残り${DAYS}日)"
+          if [ -n "$GH_TOKEN" ]; then
+            echo "$NEW" | gh secret set IG_ACCESS_TOKEN --repo "$GITHUB_REPOSITORY"
+            echo "新しいトークンを保存しました"
+          else
+            echo "GH_PAT が未設定のため保存はスキップ(60日以内に再投稿すれば実質問題なし)"
+          fi
