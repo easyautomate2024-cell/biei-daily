@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>麦刈りの丘 — 今日の美瑛</title>
+<meta name="description" content="美瑛の丘でコンバインを走らせ、小麦を刈り取るミニゲーム(試作)。">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="style.css?v=13">
+<style>
+.game-wrap { max-width: 620px; margin: 0 auto; }
+.stage {
+  position: relative; border-radius: 16px; overflow: hidden;
+  border: 1px solid var(--border2); background: #9fc3d8;
+  touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.stage canvas#gl { display: block; width: 100%; height: auto; }
+
+.hud { position: absolute; top: 10px; left: 12px; pointer-events: none; }
+.hud span {
+  display: inline-block;
+  background: rgba(15, 25, 20, 0.6); color: #fff;
+  font-size: 13px; font-weight: 700; padding: 5px 13px; border-radius: 980px;
+  font-variant-numeric: tabular-nums;
+}
+#map {
+  position: absolute; top: 10px; right: 12px;
+  width: 76px; height: auto; border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.6);
+  background: rgba(0,0,0,0.2);
+}
+
+/* 操作の目印。押しても背景は光らせない(指の動きで点滅して目障りなため) */
+.pads { position: absolute; inset: 0; display: flex; pointer-events: none; }
+.pads div {
+  flex: 1; display: flex; align-items: flex-end; justify-content: center;
+  padding-bottom: 12px; font-size: 18px;
+  color: rgba(255,255,255,0.28);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+
+.ov {
+  position: absolute; inset: 0; z-index: 5; padding: 16px 18px;
+  background: rgba(12, 22, 18, 0.84);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  color: #fff; text-align: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 9px; overflow-y: auto;   /* 文章が増えてもボタンが切れないように */
+}
+.ov.hidden { display: none; }
+.ov h2 { font-size: 21px; margin: 0; color: #fff; }
+.ov p { font-size: 13px; color: rgba(255,255,255,.85); margin: 0; line-height: 1.65; }
+
+/* 視点の切り替え */
+.viewbtn {
+  position: absolute; top: 46px; left: 12px; z-index: 4;
+  font: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+  background: rgba(15, 25, 20, 0.6); color: #fff;
+  border: 1px solid rgba(255,255,255,0.25);
+  padding: 5px 13px; border-radius: 980px;
+  pointer-events: auto;
+}
+.btn {
+  font: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+  background: var(--accent); color: #fff; border: 0;
+  padding: 12px 30px; border-radius: 980px; margin-top: 4px;
+}
+.btn:active { transform: scale(.97); }
+.note-test { font-size: 12.5px; color: var(--muted); margin-top: 12px; }
+</style>
+</head>
+<body>
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a class="nav-logo" href="index.html">
+      <span class="logo-main">今日の美瑛</span>
+      <span class="logo-sub">BIEI DAILY</span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">今日のスコア</a>
+      <a href="satellite.html">衛星</a>
+      <a href="about.html">About</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero small">
+  <p class="hero-eyebrow">Prototype</p>
+  <h1>麦刈りの丘</h1>
+  <p class="hero-sub">試作版。走って刈る感触だけを確かめるためのものです。</p>
+</header>
+
+<main>
+  <div class="game-wrap">
+    <div class="stage" id="stage">
+      <canvas id="gl"></canvas>
+      <div class="hud"><span id="hud">刈り取り 0%</span></div>
+      <button class="viewbtn" id="view">視点: 後方</button>
+      <canvas id="map" width="76" height="92"></canvas>
+      <div class="pads"><div>◀</div><div>▶</div></div>
+      <div class="ov" id="ov">
+        <h2>麦刈りの丘</h2>
+        <p><b>画面の左半分・右半分</b>を押すと曲がります(PCは←→)。<br>
+           手を離せばまっすぐ。軽く押せば小さく、押し続ければ大きく曲がります。</p>
+        <p>立っている麦の<b>壁のきわ</b>に刈取部を沿わせるのがコツ。<br>
+           先に<b>畑のふちを1周</b>しておくと、折り返しで刈り残しが出ません。</p>
+        <p>左上の<b>「視点」</b>で 後方 → 広角 → 外観 と切り替わります。</p>
+        <button class="btn" id="start">はじめる</button>
+      </div>
+    </div>
+    <p class="note-test">※ 動作確認用の試作です。音・演出・採点はまだありません。
+      <a href="satellite.html">本物の畑を衛星で見る →</a></p>
+  </div>
+</main>
+
+<footer>
+  <p><a href="index.html">今日の美瑛 トップ</a></p>
+  <p>このサイトは個人が運営する非公式の情報サイトです。</p>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  // ── 丘の形。JS と GLSL で同じ式を使う(機体の接地と描画をずらさないため)
+  const HEIGHT_GLSL = `
+    float hh(vec2 p){
+      return 2.2*sin(p.x*0.055)*cos(p.y*0.045)
+           + 1.4*sin((p.x+p.y)*0.032)
+           + 0.8*cos(p.x*0.09)*sin(p.y*0.07);
+    }
+    vec3 nrm(vec2 p){
+      float dx =  2.2*0.055*cos(p.x*0.055)*cos(p.y*0.045)
+                + 1.4*0.032*cos((p.x+p.y)*0.032)
+                - 0.8*0.09*sin(p.x*0.09)*sin(p.y*0.07);
+      float dz = -2.2*0.045*sin(p.x*0.055)*sin(p.y*0.045)
+                + 1.4*0.032*cos((p.x+p.y)*0.032)
+                + 0.8*0.07*cos(p.x*0.09)*cos(p.y*0.07);
+      return normalize(vec3(-dx, 1.0, -dz));
+    }
+    // 畑の輪郭(角の丸い長方形)。負の値が畑の中
+    float fieldSDF(vec2 p){
+      vec2 q = abs(p) - vec2(32.0, 42.0);
+      return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - 9.0;
+    }`;
+
+  const hJS = (x, z) =>
+      2.2*Math.sin(x*0.055)*Math.cos(z*0.045)
+    + 1.4*Math.sin((x+z)*0.032)
+    + 0.8*Math.cos(x*0.09)*Math.sin(z*0.07);
+
+  function nrmJS(x, z) {
+    const dx =  2.2*0.055*Math.cos(x*0.055)*Math.cos(z*0.045)
+              + 1.4*0.032*Math.cos((x+z)*0.032)
+              - 0.8*0.09*Math.sin(x*0.09)*Math.sin(z*0.07);
+    const dz = -2.2*0.045*Math.sin(x*0.055)*Math.sin(z*0.045)
+              + 1.4*0.032*Math.cos((x+z)*0.032)
+              + 0.8*0.07*Math.cos(x*0.09)*Math.cos(z*0.07);
+    return new THREE.Vector3(-dx, 1, -dz).normalize();
+  }
+  const fieldSDF = (x, z) => {
+    const qx = Math.abs(x) - 32, qy = Math.abs(z) - 42;
+    return Math.hypot(Math.max(qx,0), Math.max(qy,0)) + Math.min(Math.max(qx,qy), 0) - 9;
+  };
+
+  const WORLD = 180;        // マスク・地形が覆う範囲
+  const SWATH = 9.0;        // 刈り幅
+  const CROP_H = 1.35;      // 麦の高さ
+  const SPEED = 11.0;       // 前進(単位/秒)
+  // 舵は押した瞬間ゆるく、押し続けると強くなる。軽く叩けば微調整、
+  // 長押しでUターン。指2本のまま細かい舵と大きな舵を撃ち分けるため。
+  const TURN_MIN = 0.30, TURN_MAX = 1.10, TURN_RAMP = 1.7;
+  const TURN_SLOW = 0.45;   // 大きく曲がっている間はここまで減速する
+  // 舵に触れず真っ直ぐ走り続けると速度が乗る。長い直線を狙う理由になる
+  const BOOST = 0.62, BOOST_RAMP = 0.8, BOOST_DROP = 3.0;
+
+  // ── 刈り取りの記録。白く塗った場所が「刈り終えた」
+  const MASK = 512;
+  const mcv = document.createElement("canvas");
+  mcv.width = mcv.height = MASK;
+  const mctx = mcv.getContext("2d");
+  const maskTex = new THREE.CanvasTexture(mcv);
+  maskTex.minFilter = maskTex.magFilter = THREE.LinearFilter;
+  maskTex.wrapS = maskTex.wrapT = THREE.ClampToEdgeWrapping;
+  // WebGLは既定でテクスチャを上下反転して読む。塗った座標とずれるので止める
+  maskTex.flipY = false;
+  const w2m = (v) => (v + WORLD / 2) / WORLD * MASK;   // ワールド→マスク画素
+
+  // 刈り取り率を数えるための粗い升目
+  const GN = 220, GS = WORLD / GN;
+  const inField = new Uint8Array(GN * GN);
+  const cutCell = new Uint8Array(GN * GN);
+  let totalCells = 0, cutCells = 0;
+  for (let gz = 0; gz < GN; gz++) {
+    for (let gx = 0; gx < GN; gx++) {
+      const x = -WORLD/2 + (gx + .5) * GS, z = -WORLD/2 + (gz + .5) * GS;
+      // 畑のいちばん外の縁は刈取部を正確に当てにくいので数に入れない。
+      // 刈るのは自由だが、100%の判定は内側だけで見る
+      if (fieldSDF(x, z) < -1.2) { inField[gz*GN+gx] = 1; totalCells++; }
+    }
+  }
+
+  // ── 描画の下ごしらえ
+  const cv = document.getElementById("gl");
+  const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x9fc3d8);
+  scene.fog = new THREE.Fog(0x9fc3d8, 90, 175);
+  const camera = new THREE.PerspectiveCamera(58, 1, 0.5, 400);
+
+  const LIGHT = "vec3 L = normalize(vec3(-0.55, 0.72, 0.42));";
+
+  // 地形(刈り株・周りのパッチワーク)
+  const groundMat = new THREE.ShaderMaterial({
+    uniforms: { mask: { value: maskTex } },
+    vertexShader: `
+      varying vec2 vP;
+      ${HEIGHT_GLSL}
+      void main(){
+        vP = vec2(position.x, -position.y);   // 平面をXZに寝かせた後の座標
+        vec3 p = vec3(position.x, position.y, hh(vP));
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+      }`,
+    fragmentShader: `
+      precision highp float;
+      varying vec2 vP;
+      uniform sampler2D mask;
+      ${HEIGHT_GLSL}
+      float hash(float n){ return fract(sin(n) * 43758.5453); }
+      vec3 patchwork(vec2 p){
+        // 丘の等高線に沿って畑が細長く並ぶ。色は畑ごとに違う
+        float id = floor((p.x * 0.62 + p.y * 0.38 + sin(p.y * 0.035) * 7.0) / 15.0);
+        float r = hash(id * 12.9898);
+        vec3 c;
+        if (r < 0.22)      c = vec3(0.25, 0.42, 0.21);
+        else if (r < 0.42) c = vec3(0.43, 0.60, 0.30);
+        else if (r < 0.60) c = vec3(0.72, 0.61, 0.39);
+        else if (r < 0.76) c = vec3(0.54, 0.42, 0.28);
+        else if (r < 0.90) c = vec3(0.55, 0.60, 0.33);
+        else               c = vec3(0.78, 0.74, 0.54);
+        float edge = abs(fract((p.x*0.62 + p.y*0.38 + sin(p.y*0.035)*7.0) / 15.0) - 0.5);
+        c *= smoothstep(0.0, 0.06, edge) * 0.15 + 0.85;   // 畑の境に細い畦
+        return c;
+      }
+      void main(){
+        vec3 base;
+        if (fieldSDF(vP) < 0.0) {
+          // 刈り株。刈った所はやや明るい麦わら色
+          vec2 uv = (vP + ${(WORLD/2).toFixed(1)}) / ${WORLD.toFixed(1)};
+          float cut = texture2D(mask, uv).r;
+          vec3 stub = mix(vec3(0.62, 0.55, 0.33), vec3(0.84, 0.77, 0.52), cut);
+          stub *= 0.94 + 0.06 * sin(vP.x * 3.1) * sin(vP.y * 2.7);
+          base = stub;
+        } else {
+          base = patchwork(vP);
+        }
+        ${LIGHT}
+        float d = max(dot(nrm(vP), L), 0.0);
+        vec3 col = base * (0.45 + 0.75 * d);
+        gl_FragColor = vec4(col, 1.0);
+      }`,
+  });
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(WORLD, WORLD, 140, 140), groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  scene.add(ground);
+
+  // 立っている麦。刈った所は高さ0になって消える
+  const cropMat = new THREE.ShaderMaterial({
+    uniforms: { mask: { value: maskTex } },
+    extensions: { derivatives: true },
+    vertexShader: `
+      varying vec2 vP;
+      varying float vStand;
+      varying vec3 vW;
+      uniform sampler2D mask;
+      ${HEIGHT_GLSL}
+      void main(){
+        vP = vec2(position.x, -position.y);
+        vec2 uv = (vP + ${(WORLD/2).toFixed(1)}) / ${WORLD.toFixed(1)};
+        float cut = texture2D(mask, uv).r;
+        float inside = 1.0 - smoothstep(-1.2, 0.0, fieldSDF(vP));
+        vStand = (1.0 - cut) * inside;
+        vec3 p = vec3(position.x, position.y, hh(vP) + ${CROP_H.toFixed(2)} * vStand);
+        vec4 wp = modelMatrix * vec4(p, 1.0);
+        vW = wp.xyz;
+        gl_Position = projectionMatrix * viewMatrix * wp;
+      }`,
+    fragmentShader: `
+      precision highp float;
+      varying vec2 vP;
+      varying float vStand;
+      varying vec3 vW;
+      void main(){
+        if (vStand < 0.07) discard;              // 刈り終えた所には麦が無い
+        vec3 n = normalize(cross(dFdx(vW), dFdy(vW)));
+        if (n.y < 0.0) n = -n;
+        ${LIGHT}
+        float d = max(dot(n, L), 0.0);
+        // 穂の粒立ち
+        float g = sin(vP.x * 5.3) * sin(vP.y * 4.1) * 0.5 + 0.5;
+        vec3 gold = mix(vec3(0.80, 0.66, 0.26), vec3(0.93, 0.83, 0.42), g);
+        // 切り口の壁は少し暗く沈ませる
+        float wall = smoothstep(0.85, 0.25, n.y);
+        gold = mix(gold, vec3(0.62, 0.50, 0.22), wall * 0.75);
+        vec3 col = gold * (0.42 + 0.8 * d);
+        gl_FragColor = vec4(col, 1.0);
+      }`,
+  });
+  const crop = new THREE.Mesh(new THREE.PlaneGeometry(112, 128, 224, 256), cropMat);
+  crop.rotation.x = -Math.PI / 2;
+  scene.add(crop);
+
+  // ── コンバイン。実機の構成に沿って組む(前方は +Z)
+  const rig = new THREE.Group();
+  const M = (c, o) => new THREE.MeshLambertMaterial(Object.assign({ color: c }, o || {}));
+  const mGreen = M(0x2f6b35), mGreenD = M(0x235028), mYellow = M(0xdcbf3f),
+        mDark = M(0x23252a), mSteel = M(0x9aa1a8), mGlass = M(0x86b0c6),
+        mWhite = M(0xe2e6e8), mRust = M(0xb08a3a), mTread = M(0x33373d);
+  const put = (geo, mat, x, y, z, rx, ry, rz, parent) => {
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set(x, y, z);
+    m.rotation.set(rx || 0, ry || 0, rz || 0);
+    (parent || rig).add(m);
+    return m;
+  };
+  const B = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+  const C = (r, h, s) => new THREE.CylinderGeometry(r, r, h, s || 14);
+
+  // 車体・エンジン部
+  put(B(3.2, 1.9, 5.4), mGreen, 0, 2.55, -0.9);
+  put(B(3.3, 0.5, 5.2), mGreenD, 0, 1.55, -0.9);          // 下回り
+  put(B(3.0, 1.5, 1.5), mGreenD, 0, 2.3, -3.9);            // エンジン室
+  put(C(0.78, 0.25, 18), mSteel, 0, 2.5, -4.7, Math.PI/2); // 回転グリル
+  put(B(2.9, 0.9, 1.1), mGreenD, 0, 1.5, -4.3);            // 排稈フード
+  put(C(0.13, 1.3, 8), mDark, 1.05, 4.15, -1.2);           // 排気筒
+
+  // グレンタンク(上に向かって広がる)。後方視点で前をふさぐので背は低めに
+  put(B(2.9, 0.45, 3.0), mGreen, 0, 3.7, -0.9);
+  put(B(3.25, 0.6, 3.1), mYellow, 0, 4.15, -0.9);
+  put(B(3.05, 0.1, 2.9), mGreenD, 0, 4.5, -0.9);
+
+  // 排出オーガ(格納状態で左前方へ)
+  const auger = new THREE.Group();
+  auger.position.set(-1.6, 4.0, -0.4);
+  auger.rotation.set(0.06, 0, 0.05);
+  put(C(0.26, 5.4, 10), mYellow, 0, 0, 2.3, Math.PI/2, 0, 0, auger);
+  put(C(0.34, 0.7, 10), mGreenD, 0, 0, -0.2, Math.PI/2, 0, 0, auger);
+  put(B(0.7, 0.5, 0.6), mYellow, 0, -0.15, 4.9, 0, 0, 0, auger);
+  rig.add(auger);
+
+  // キャビン
+  put(B(2.05, 1.55, 1.95), mWhite, 0, 3.6, 1.55);
+  put(B(1.95, 1.15, 0.1), mGlass, 0, 3.62, 2.55);          // 前面ガラス
+  put(B(0.1, 1.15, 1.8), mGlass, -1.03, 3.62, 1.55);
+  put(B(0.1, 1.15, 1.8), mGlass, 1.03, 3.62, 1.55);
+  put(B(2.25, 0.14, 2.15), mWhite, 0, 4.45, 1.55);          // 屋根
+  put(B(0.12, 0.12, 0.5), mDark, -1.2, 4.3, 2.4);           // ミラー
+  put(B(0.12, 0.12, 0.5), mDark, 1.2, 4.3, 2.4);
+  put(B(0.34, 0.2, 0.18), mWhite, -0.6, 4.5, 2.6);          // 作業灯
+  put(B(0.34, 0.2, 0.18), mWhite, 0.6, 4.5, 2.6);
+  for (let i = 0; i < 4; i++)                               // 乗降ステップ
+    put(B(0.7, 0.07, 0.24), mSteel, 1.62, 1.0 + i * 0.55, 1.2);
+
+  // フィーダハウス(刈取部と車体をつなぐ喉)
+  put(B(1.95, 1.25, 2.9), mGreenD, 0, 2.35, 2.55, -0.17);
+
+  // ── 刈取部
+  const HW = SWATH;                                         // 刈幅
+  put(B(HW, 0.55, 1.5), mYellow, 0, 1.05, 4.25);            // 受け皿
+  put(B(HW, 1.15, 0.22), mYellow, 0, 1.5, 3.5);             // 背板
+  put(C(0.3, HW - 0.6, 10), mGreenD, 0, 1.15, 4.5, 0, 0, Math.PI/2); // 横送りオーガ
+  put(B(HW, 0.1, 0.62), mSteel, 0, 0.82, 5.05);             // 刈刃
+  for (let i = 0; i <= 30; i++)                             // 刈刃の爪
+    put(B(0.1, 0.08, 0.3), mSteel, -HW/2 + i * (HW/30), 0.82, 5.32);
+  // 左右のデバイダ(麦を分ける先端)
+  [-1, 1].forEach((s) => {
+    const c = new THREE.Mesh(new THREE.ConeGeometry(0.3, 1.5, 8), mYellow);
+    c.position.set(s * HW/2, 1.1, 5.4); c.rotation.x = Math.PI/2; rig.add(c);
+  });
+
+  // リール(羽根つき)。これが回ると一気にコンバインらしくなる
+  const reel = new THREE.Group();
+  reel.position.set(0, 2.15, 4.55);
+  put(C(0.16, HW - 0.5, 8), mSteel, 0, 0, 0, 0, 0, Math.PI/2, reel);
+  for (let i = 0; i < 6; i++) {
+    const th = (i / 6) * Math.PI * 2, r = 0.72;
+    const bat = new THREE.Group();
+    bat.position.set(0, Math.cos(th) * r, Math.sin(th) * r);
+    bat.rotation.x = -th;
+    put(B(HW - 0.5, 0.1, 0.34), mRust, 0, 0, 0, 0, 0, 0, bat);
+    for (let k = 0; k < 10; k++)                            // タイン(掻き込みの歯)
+      put(B(0.05, 0.34, 0.05), mDark,
+          -HW/2 + 0.4 + k * ((HW - 0.8) / 9), -0.2, 0.05, 0, 0, 0, bat);
+    reel.add(bat);
+  }
+  [-1, 1].forEach((s) => put(B(0.14, 0.14, 1.7), mYellow, s * (HW/2 - 0.15), 1.9, 3.9));
+  rig.add(reel);
+
+  // 車輪: 前は大径の駆動輪、後ろは小さな操舵輪。
+  // 向きを変える枠(yaw)の中に、転がる枠(spin)を入れ子にする
+  const wheels = [];
+  const wheel = (x, z, r, w, rear) => {
+    const yaw = new THREE.Group();
+    yaw.position.set(x, r, z);
+    const spin = new THREE.Group();
+    yaw.add(spin);
+    put(C(r, w, 16), mDark, 0, 0, 0, 0, 0, Math.PI/2, spin);
+    put(C(r * 0.45, w + 0.06, 12), mYellow, 0, 0, 0, 0, 0, Math.PI/2, spin);
+    // タイヤの溝。斜めに寝かせた板を並べると農業機械らしい山形になる
+    for (let i = 0; i < 16; i++) {
+      const th = (i / 16) * Math.PI * 2;
+      const lug = new THREE.Group();
+      lug.position.set(0, Math.cos(th) * r * 0.99, Math.sin(th) * r * 0.99);
+      lug.rotation.set(-th, 0, 0);
+      lug.rotateY(i % 2 ? 0.5 : -0.5);
+      put(B(w * 0.88, 0.1, 0.26), mTread, 0, 0, 0, 0, 0, 0, lug);
+      spin.add(lug);
+    }
+    rig.add(yaw);
+    wheels.push({ yaw, spin, r, rear: !!rear });
+  };
+  wheel(-1.75, 1.15, 1.3, 0.95); wheel(1.75, 1.15, 1.3, 0.95);
+  wheel(-1.45, -3.5, 0.82, 0.62, true); wheel(1.45, -3.5, 0.82, 0.62, true);
+  scene.add(rig);
+
+  scene.add(new THREE.HemisphereLight(0xdcecf5, 0x5a6a3a, 0.85));
+  const sun = new THREE.DirectionalLight(0xfff3d8, 0.75);
+  sun.position.set(-40, 55, 30); scene.add(sun);
+
+  // ── 状態
+  // 畑の左端に刈り取り部の左角をぴたりと合わせ、手前の外から進入する。
+  // 畑の直線部は x=±41 なので、中心を -41 + 刈り幅/2 に置くと端が揃う
+  const START = { x: -41 + SWATH / 2, z: -56, a: 0 };
+  const S = { x: 0, z: 0, a: 0, run: false, L: false, R: false,
+              hold: 0, straight: 0, v: 0, prev: null };
+  // 刈取部は幅のある棒なので、両端の位置を返す。旋回中は端が弧を描く
+  function headerEnds() {
+    const fx = Math.sin(S.a), fz = Math.cos(S.a);
+    const rx = Math.cos(S.a), rz = -Math.sin(S.a);   // 機体から見た右方向
+    const cx = S.x + fx * 4.25, cz = S.z + fz * 4.25;
+    // 見た目の刈幅よりごく僅かに広く刈る。隣の列との間に髪の毛のような
+    // 筋が残るのを防ぐため。三日月形の取り残しはここでは消さない
+    const h = SWATH / 2 + 0.6;
+    return [cx - rx * h, cz - rz * h, cx + rx * h, cz + rz * h];
+  }
+
+  function reset() {
+    mctx.clearRect(0, 0, MASK, MASK);
+    cutCell.fill(0); cutCells = 0;
+    S.x = START.x; S.z = START.z; S.a = START.a; S.L = S.R = false;
+    S.hold = 0; S.straight = 0; S.v = SPEED;
+    camInit = false;
+    S.prev = headerEnds();
+    maskTex.needsUpdate = true;
+  }
+
+  // 刈り取り: 刈取部の両端が描いた軌跡で囲まれる四角形を塗る。
+  // 中心線を太く塗る方式だと、旋回中に外側が取り残される
+  function harvest(p, c) {
+    const quad = [[p[0], p[1]], [p[2], p[3]], [c[2], c[3]], [c[0], c[1]]];
+
+    mctx.fillStyle = mctx.strokeStyle = "#fff";
+    mctx.lineWidth = 1.5;            // 縁を撫でて継ぎ目の隙間を埋める
+    mctx.beginPath();
+    mctx.moveTo(w2m(quad[0][0]), w2m(quad[0][1]));
+    for (let i = 1; i < 4; i++) mctx.lineTo(w2m(quad[i][0]), w2m(quad[i][1]));
+    mctx.closePath();
+    mctx.fill(); mctx.stroke();
+    maskTex.needsUpdate = true;
+
+    // 升目の記録も同じ四角形で判定する
+    let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+    for (const [qx, qz] of quad) {
+      if (qx < minX) minX = qx; if (qx > maxX) maxX = qx;
+      if (qz < minZ) minZ = qz; if (qz > maxZ) maxZ = qz;
+    }
+    const gx0 = Math.max(0, Math.floor((minX + WORLD/2) / GS));
+    const gx1 = Math.min(GN-1, Math.ceil((maxX + WORLD/2) / GS));
+    const gz0 = Math.max(0, Math.floor((minZ + WORLD/2) / GS));
+    const gz1 = Math.min(GN-1, Math.ceil((maxZ + WORLD/2) / GS));
+    for (let gz = gz0; gz <= gz1; gz++) {
+      for (let gx = gx0; gx <= gx1; gx++) {
+        const i = gz*GN + gx;
+        if (!inField[i] || cutCell[i]) continue;
+        const px = -WORLD/2 + (gx+.5)*GS, pz = -WORLD/2 + (gz+.5)*GS;
+        // 旋回中は左右が逆向きに動いて形がねじれるため、凸形状を前提にしない
+        let inside = false;
+        for (let k = 0, j = 3; k < 4; j = k++) {
+          const [ax, az] = quad[k], [bx, bz] = quad[j];
+          if ((az > pz) !== (bz > pz) &&
+              px < (bx - ax) * (pz - az) / (bz - az) + ax) inside = !inside;
+        }
+        if (inside) { cutCell[i] = 1; cutCells++; }
+      }
+    }
+  }
+
+  // ── 画面の更新
+  const mapCv = document.getElementById("map"), mapCtx = mapCv.getContext("2d");
+  let mapT = 0;
+  function drawMap() {
+    const w = mapCv.width, h = mapCv.height;
+    mapCtx.fillStyle = "#4e7b3f"; mapCtx.fillRect(0, 0, w, h);
+    // 畑の範囲(マスクと同じ座標系で縮小表示)
+    const sx = w / WORLD, sz = h / WORLD;
+    mapCtx.save();
+    mapCtx.translate(w/2, h/2); mapCtx.scale(sx, sz);
+    mapCtx.fillStyle = "#c9a63f";
+    mapCtx.beginPath();
+    mapCtx.roundRect(-41, -51, 82, 102, 9);
+    mapCtx.fill();
+    mapCtx.restore();
+    mapCtx.globalAlpha = 0.92;
+    mapCtx.drawImage(mcv, 0, 0, w, h);
+    mapCtx.globalAlpha = 1;
+    mapCtx.fillStyle = "#d92";
+    mapCtx.beginPath();
+    mapCtx.arc(w/2 + S.x*sx, h/2 + S.z*sz, 2.4, 0, 7);
+    mapCtx.fill();
+  }
+
+  function step(dt) {
+    const dir = (S.L && !S.R) ? 1 : (S.R && !S.L) ? -1 : 0;
+    // 押している長さで舵の効きを育てる。離せばすぐ戻る
+    S.hold = dir ? Math.min(1, S.hold + dt * TURN_RAMP) : 0;
+    const rate = TURN_MIN + (TURN_MAX - TURN_MIN) * S.hold;
+    S.a += dir * rate * dt;
+
+    // 真っ直ぐが続くほど速く、曲がるほど遅く
+    S.straight = dir ? Math.max(0, S.straight - dt * BOOST_DROP)
+                     : Math.min(1, S.straight + dt * BOOST_RAMP);
+    const v = SPEED * (1 + BOOST * S.straight)
+                    * (1 - (1 - TURN_SLOW) * (dir ? S.hold : 0));
+    S.v = v;
+    S.x += Math.sin(S.a) * v * dt;
+    S.z += Math.cos(S.a) * v * dt;
+    S.x = Math.max(-80, Math.min(80, S.x));
+    S.z = Math.max(-80, Math.min(80, S.z));
+
+    const cur = headerEnds();
+    harvest(S.prev, cur);
+    S.prev = cur;
+
+    // X軸まわりは正の向きで上側が前へ動く。リールは下側が後ろへ掃いて
+    // 麦を刈刃に送り込むので、転がる車輪と同じ向きになる
+    reel.rotation.x += dt * (3 + v * 0.7);
+
+    // 走った距離ぶんタイヤを転がす。後輪は舵にあわせて向きも変える。
+    // コンバインは後輪操舵。フォークリフトと同じで、左へ曲がるときは
+    // 後輪が右を向いて尻を右に振り出し、その結果として機首が左を向く
+    const dist = v * dt;
+    const target = -dir * S.hold * 0.5;
+    for (const w of wheels) {
+      w.spin.rotation.x += dist / w.r;
+      if (w.rear) w.yaw.rotation.y += (target - w.yaw.rotation.y) * Math.min(1, dt * 9);
+    }
+  }
+
+  const up = new THREE.Vector3(), fwd = new THREE.Vector3(), right = new THREE.Vector3();
+  const basis = new THREE.Matrix4();
+  const camPos = new THREE.Vector3(), camAim = new THREE.Vector3();
+  let camInit = false, view = "chase", orbit = Math.PI;
+
+  function place() {
+    const y = hJS(S.x, S.z);
+    rig.position.set(S.x, y, S.z);
+    // 斜面にならって機体を傾ける。丘を走っている実感はここから出る
+    up.copy(nrmJS(S.x, S.z));
+    fwd.set(Math.sin(S.a), 0, Math.cos(S.a));
+    fwd.addScaledVector(up, -fwd.dot(up)).normalize();
+    right.crossVectors(up, fwd).normalize();
+    basis.makeBasis(right, up, fwd);
+    rig.quaternion.setFromRotationMatrix(basis);
+
+    // 速いほどカメラが引く。速度が出ている実感はここで出す。
+    // 車体が高いので見下ろし角を深めにとらないと前が見えない
+    if (view === "wide") {
+      // 広角。畑全体の刈り残しや、次にどう攻めるかを見るための眺め
+      camPos.set(S.x, y, S.z).addScaledVector(fwd, -24).addScaledVector(up, 22);
+      camAim.set(S.x, y, S.z).addScaledVector(fwd, 10);
+    } else if (view === "show") {
+      // 外観。機体のまわりをゆっくり一周する。前からも見られる
+      const R = 11.5;
+      camPos.set(S.x, y, S.z)
+        .addScaledVector(fwd, Math.cos(orbit) * R)
+        .addScaledVector(right, Math.sin(orbit) * R)
+        .addScaledVector(up, 4.6);
+      camAim.set(S.x, y + 2.0, S.z);
+    } else {
+      camPos.set(S.x, y, S.z)
+        .addScaledVector(fwd, -(13.5 + 3.0 * S.straight))
+        .addScaledVector(up, 9.2 + 0.9 * S.straight);
+      camAim.set(S.x, y + 1.3, S.z).addScaledVector(fwd, 9);
+    }
+    camPos.y = Math.max(camPos.y, hJS(camPos.x, camPos.z) + 3.0);
+    if (!camInit) { camera.position.copy(camPos); camInit = true; }
+    else camera.position.lerp(camPos, 0.12);
+    camera.lookAt(camAim);
+  }
+
+  function resize() {
+    const w = document.getElementById("stage").clientWidth;
+    const h = Math.round(Math.min(w * 1.15, Math.max(320, innerHeight * 0.62)));
+    renderer.setSize(w, h, false);
+    cv.style.width = w + "px"; cv.style.height = h + "px";
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+  }
+  addEventListener("resize", resize);
+
+  let last = 0;
+  function loop(ts) {
+    const dt = Math.min(0.05, (ts - (last || ts)) / 1000);
+    last = ts;
+    if (view === "show") orbit += dt * 0.38;   // 外観はゆっくり回り込む
+    if (S.run) {
+      step(dt);
+      const pct = cutCells / totalCells * 100;
+      document.getElementById("hud").textContent =
+        `刈り取り ${pct >= 99.4 ? 100 : Math.floor(pct)}%`;
+      mapT += dt;
+      if (mapT > 0.25) { mapT = 0; drawMap(); }
+    }
+    place();
+    renderer.render(scene, camera);
+    requestAnimationFrame(loop);
+  }
+
+  // ── 操作: 画面の左右、または矢印キー
+  const stage = document.getElementById("stage");
+  let usedTouch = false;
+  const set = (side, on) => { if (side === "L") S.L = on; else S.R = on; };
+  function fromPoints(e) {
+    const r = stage.getBoundingClientRect();
+    const pts = e.touches ? Array.from(e.touches) : [e];
+    let l = false, rr = false;
+    for (const p of pts) (p.clientX - r.left < r.width / 2) ? (l = true) : (rr = true);
+    set("L", l); set("R", rr);
+  }
+  ["touchstart", "touchmove"].forEach((ev) => stage.addEventListener(ev, (e) => {
+    usedTouch = true;
+    if (!S.run) return; e.preventDefault(); fromPoints(e);
+  }, { passive: false }));
+  ["touchend", "touchcancel"].forEach((ev) => stage.addEventListener(ev, (e) => {
+    usedTouch = true;
+    // 指を離した後に擬似マウスイベントが飛んで状態がばたつくのを止める
+    if (S.run) e.preventDefault();
+    if (e.touches && e.touches.length) fromPoints(e);
+    else { set("L", false); set("R", false); }
+  }, { passive: false }));
+  stage.addEventListener("mousedown", (e) => { if (S.run && !usedTouch) fromPoints(e); });
+  addEventListener("mouseup", () => { set("L", false); set("R", false); });
+  const KEY = { ArrowLeft: "L", ArrowRight: "R" };
+  addEventListener("keydown", (e) => {
+    const k = KEY[e.key];
+    if (k) { set(k, true); if (S.run) e.preventDefault(); }
+  });
+  addEventListener("keyup", (e) => { const k = KEY[e.key]; if (k) set(k, false); });
+
+  // 視点の切り替え。ボタンの上のタッチは舵に渡さない
+  const viewBtn = document.getElementById("view");
+  const VIEWS = ["chase", "wide", "show"];
+  const VIEW_JA = { chase: "後方", wide: "広角", show: "外観" };
+  const toggleView = () => {
+    view = VIEWS[(VIEWS.indexOf(view) + 1) % VIEWS.length];
+    viewBtn.textContent = "視点: " + VIEW_JA[view];
+    if (view === "show") orbit = Math.PI;      // 後ろから回り始める
+    camInit = false;                       // 切り替え時は一瞬で移る
+    set("L", false); set("R", false);
+  };
+  let viewLock = 0;
+  const onView = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const now = performance.now();
+    if (now - viewLock < 400) return;    // touchstart と click の二重発火を防ぐ
+    viewLock = now;
+    toggleView();
+  };
+  viewBtn.addEventListener("touchstart", onView, { passive: false });
+  viewBtn.addEventListener("click", onView);
+  viewBtn.addEventListener("touchend", (e) => { e.preventDefault(); e.stopPropagation(); });
+  addEventListener("keydown", (e) => { if (e.key === "v" || e.key === "V") toggleView(); });
+
+  document.getElementById("start").addEventListener("click", () => {
+    reset();
+    document.getElementById("ov").classList.add("hidden");
+    S.run = true;
+  });
+
+  resize(); reset(); drawMap();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
