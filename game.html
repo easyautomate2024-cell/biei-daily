@@ -8,6 +8,41 @@
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="robots" content="noindex">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2DT79T20E6"></script>
+<script>
+  // 管理人の端末(?notrack=1で登録)と開発プレビューを計測から除外する
+  (function () {
+    var msg = null;
+    try {
+      var q = new URLSearchParams(location.search);
+      if (q.has("notrack")) {
+        if (q.get("notrack") === "0") { localStorage.removeItem("biei-notrack"); msg = "この端末の計測を再開しました"; }
+        else { localStorage.setItem("biei-notrack", "1"); msg = "この端末をアクセス集計から除外しました"; }
+      }
+      if (localStorage.getItem("biei-notrack") === "1" ||
+          /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ||
+          location.protocol === "file:") {
+        window["ga-disable-G-2DT79T20E6"] = true;
+      }
+    } catch (e) { /* プライベートブラウズ等では既定のまま */ }
+    if (msg) {
+      var show = function () {
+        var d = document.createElement("div");
+        d.textContent = msg;
+        d.style.cssText = "position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1d1d1f;color:#fff;padding:10px 18px;border-radius:980px;font-size:13px;z-index:9999";
+        document.body.appendChild(d);
+        setTimeout(function () { d.remove(); }, 8000);
+      };
+      if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", show);
+      else show();
+    }
+  })();
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2DT79T20E6');
+</script>
 <link rel="stylesheet" href="style.css?v=13">
 <style>
 .game-wrap { max-width: 620px; margin: 0 auto; }
@@ -69,6 +104,14 @@
 }
 .btn:active { transform: scale(.97); }
 .note-test { font-size: 12.5px; color: var(--muted); margin-top: 12px; }
+/* 結果: 刈り跡を真上から見せる */
+.satbox { display: flex; align-items: center; gap: 13px; margin-top: 2px; }
+.satbox canvas {
+  width: 82px; height: auto; border-radius: 7px;
+  border: 1px solid rgba(255,255,255,0.45);
+  image-rendering: pixelated;
+}
+.satbox p { text-align: left; font-size: 12px; }
 </style>
 </head>
 <body>
@@ -98,8 +141,19 @@
       <canvas id="gl"></canvas>
       <div class="hud"><span id="hud">刈り取り 0%</span></div>
       <button class="viewbtn" id="view">視点: 後方</button>
+      <button class="viewbtn" id="snd" style="top: 78px;">音: 切</button>
       <canvas id="map" width="76" height="92"></canvas>
       <div class="pads"><div>◀</div><div>▶</div></div>
+      <div class="ov hidden" id="ovEnd">
+        <h2 id="endRank">—</h2>
+        <p id="endDetail"></p>
+        <div class="satbox">
+          <canvas id="sat" width="82" height="102"></canvas>
+          <p>衛星から見ると<br>あなたの畑はこう見えます</p>
+        </div>
+        <button class="btn" id="again">もう一度</button>
+      </div>
+
       <div class="ov" id="ov">
         <h2>麦刈りの丘</h2>
         <p><b>画面の左半分・右半分</b>を押すと曲がります(PCは←→)。<br>
@@ -167,6 +221,7 @@
   const WORLD = 180;        // マスク・地形が覆う範囲
   const SWATH = 9.0;        // 刈り幅
   const CROP_H = 1.35;      // 麦の高さ
+  const EDGE = -0.6;        // 畑の縁からこの距離(m)より内側だけを描き、数える
   const SPEED = 11.0;       // 前進(単位/秒)
   // 舵は押した瞬間ゆるく、押し続けると強くなる。軽く叩けば微調整、
   // 長押しでUターン。指2本のまま細かい舵と大きな舵を撃ち分けるため。
@@ -187,18 +242,39 @@
   maskTex.flipY = false;
   const w2m = (v) => (v + WORLD / 2) / WORLD * MASK;   // ワールド→マスク画素
 
-  // 刈り取り率を数えるための粗い升目
+  // 刈り取り率を数えるための升目。
+  // 「刈れたか」は幾何で別計算せず、麦の描画が読んでいるマスクをそのまま読む。
+  // 見えている麦が無ければ100%、見えていれば100%未満——定義上ずれない
   const GN = 220, GS = WORLD / GN;
-  const inField = new Uint8Array(GN * GN);
-  const cutCell = new Uint8Array(GN * GN);
-  let totalCells = 0, cutCells = 0;
+  const inField = new Uint8Array(GN * GN);   // 採点対象の升目
+  const cellPix = new Int32Array(GN * GN);   // 各升目の中心が読むマスク画素
+  const maskCut = new Uint8Array(GN * GN);   // マスクから読んだ「刈れた」
+  const cutGeo = new Uint8Array(GN * GN);    // 二度刈り判定用(幾何)
+  const underPrev = new Uint8Array(GN * GN); // 前フレームに刈取部の下にあった升目
+  let totalCells = 0, maskCutCount = 0;
+  let entries = 0, wasteEntries = 0;         // 進入回数 / うち刈り済みへの進入
   for (let gz = 0; gz < GN; gz++) {
     for (let gx = 0; gx < GN; gx++) {
+      const i = gz * GN + gx;
       const x = -WORLD/2 + (gx + .5) * GS, z = -WORLD/2 + (gz + .5) * GS;
-      // 畑のいちばん外の縁は刈取部を正確に当てにくいので数に入れない。
-      // 刈るのは自由だが、100%の判定は内側だけで見る
-      if (fieldSDF(x, z) < -1.2) { inField[gz*GN+gx] = 1; totalCells++; }
+      if (fieldSDF(x, z) < EDGE) { inField[i] = 1; totalCells++; }
+      const mx = Math.min(MASK - 1, Math.floor(w2m(x)));
+      const mz = Math.min(MASK - 1, Math.floor(w2m(z)));
+      cellPix[i] = (mz * MASK + mx) * 4;
     }
+  }
+
+  // マスクを読んで刈り取り率を数える(毎秒4回で足りる)
+  function countFromMask() {
+    const px = mctx.getImageData(0, 0, MASK, MASK).data;
+    let n = 0;
+    for (let i = 0; i < GN * GN; i++) {
+      if (!inField[i]) continue;
+      const c = px[cellPix[i]] >= 128 ? 1 : 0;
+      maskCut[i] = c; n += c;
+    }
+    maskCutCount = n;
+    return n / totalCells * 100;
   }
 
   // ── 描画の下ごしらえ
@@ -229,19 +305,37 @@
       uniform sampler2D mask;
       ${HEIGHT_GLSL}
       float hash(float n){ return fract(sin(n) * 43758.5453); }
+      float hash2(vec2 v){ return fract(sin(dot(v, vec2(12.9898, 78.233))) * 43758.5453); }
       vec3 patchwork(vec2 p){
-        // 丘の等高線に沿って畑が細長く並ぶ。色は畑ごとに違う
-        float id = floor((p.x * 0.62 + p.y * 0.38 + sin(p.y * 0.035) * 7.0) / 15.0);
-        float r = hash(id * 12.9898);
+        // 美瑛の丘は、色違いの畑が縦横に敷き詰められたパッチワーク。
+        // 等高線に沿う向き(u)と、それに直交する向き(v)の2方向で区切る
+        float u = (p.x * 0.62 + p.y * 0.38 + sin(p.y * 0.035) * 7.0) / 15.0;
+        float v = (-p.x * 0.38 + p.y * 0.62 + sin(p.x * 0.031) * 6.0) / 20.0;
+        float iu = floor(u);
+        v += hash(iu * 3.7) * 2.0;          // 列ごとに区切り位置をずらす
+        float iv = floor(v);
+        float r = hash2(vec2(iu, iv));
+
         vec3 c;
-        if (r < 0.22)      c = vec3(0.25, 0.42, 0.21);
-        else if (r < 0.42) c = vec3(0.43, 0.60, 0.30);
-        else if (r < 0.60) c = vec3(0.72, 0.61, 0.39);
-        else if (r < 0.76) c = vec3(0.54, 0.42, 0.28);
-        else if (r < 0.90) c = vec3(0.55, 0.60, 0.33);
-        else               c = vec3(0.78, 0.74, 0.54);
-        float edge = abs(fract((p.x*0.62 + p.y*0.38 + sin(p.y*0.035)*7.0) / 15.0) - 0.5);
-        c *= smoothstep(0.0, 0.06, edge) * 0.15 + 0.85;   // 畑の境に細い畦
+        if (r < 0.20)      c = vec3(0.24, 0.41, 0.20);   // 濃い緑(牧草・豆)
+        else if (r < 0.38) c = vec3(0.44, 0.61, 0.30);   // 若い緑
+        else if (r < 0.52) c = vec3(0.72, 0.61, 0.39);   // 刈った後の薄茶
+        else if (r < 0.65) c = vec3(0.52, 0.40, 0.27);   // 耕した土
+        else if (r < 0.78) c = vec3(0.56, 0.61, 0.33);   // オリーブ(ビート)
+        else if (r < 0.90) c = vec3(0.82, 0.72, 0.38);   // 色づいた麦
+        else               c = vec3(0.80, 0.77, 0.58);   // 収穫後の畑
+
+        // 畑の中の畝。向きは畑ごとに違う
+        float rowDir = hash2(vec2(iu, iv) + 5.0);
+        float rows = rowDir < 0.5
+          ? sin((p.x * 0.62 + p.y * 0.38) * 2.3)
+          : sin((-p.x * 0.38 + p.y * 0.62) * 2.3);
+        c *= 0.96 + 0.04 * rows;
+
+        // 区画の境にできる細い畦
+        float eu = abs(fract(u) - 0.5), ev = abs(fract(v) - 0.5);
+        float edge = min(smoothstep(0.0, 0.035, eu), smoothstep(0.0, 0.03, ev));
+        c *= edge * 0.22 + 0.78;
         return c;
       }
       void main(){
@@ -272,17 +366,18 @@
     extensions: { derivatives: true },
     vertexShader: `
       varying vec2 vP;
-      varying float vStand;
+      varying float vCut, vInside;
       varying vec3 vW;
       uniform sampler2D mask;
       ${HEIGHT_GLSL}
       void main(){
         vP = vec2(position.x, -position.y);
         vec2 uv = (vP + ${(WORLD/2).toFixed(1)}) / ${WORLD.toFixed(1)};
-        float cut = texture2D(mask, uv).r;
-        float inside = 1.0 - smoothstep(-1.2, 0.0, fieldSDF(vP));
-        vStand = (1.0 - cut) * inside;
-        vec3 p = vec3(position.x, position.y, hh(vP) + ${CROP_H.toFixed(2)} * vStand);
+        vCut = texture2D(mask, uv).r;
+        // 畑の縁: 内側 ${EDGE.toFixed(1)}m の線で 0.5 になる。採点の升目もこの線で切る
+        vInside = 1.0 - smoothstep(${(EDGE * 2).toFixed(1)}, 0.0, fieldSDF(vP));
+        float stand = (1.0 - vCut) * vInside;
+        vec3 p = vec3(position.x, position.y, hh(vP) + ${CROP_H.toFixed(2)} * stand);
         vec4 wp = modelMatrix * vec4(p, 1.0);
         vW = wp.xyz;
         gl_Position = projectionMatrix * viewMatrix * wp;
@@ -290,10 +385,11 @@
     fragmentShader: `
       precision highp float;
       varying vec2 vP;
-      varying float vStand;
+      varying float vCut, vInside;
       varying vec3 vW;
       void main(){
-        if (vStand < 0.07) discard;              // 刈り終えた所には麦が無い
+        // 消える線は「マスクが50%」と「畑の縁」。採点が数える線と同じにする
+        if (vCut > 0.5 || vInside < 0.5) discard;
         vec3 n = normalize(cross(dFdx(vW), dFdy(vW)));
         if (n.y < 0.0) n = -n;
         ${LIGHT}
@@ -425,16 +521,187 @@
   wheel(-1.45, -3.5, 0.82, 0.62, true); wheel(1.45, -3.5, 0.82, 0.62, true);
   scene.add(rig);
 
+  // ── 丘に立つ木。美瑛の風景を決めているのは、畑と、この木立
+  const mLeaf = new THREE.MeshLambertMaterial({ color: 0x2c5c30 });
+  const mLeaf2 = new THREE.MeshLambertMaterial({ color: 0x38713a });
+  const mTrunk = new THREE.MeshLambertMaterial({ color: 0x4a3a2a });
+
+  // 防風林。畑の境に針葉樹が列になって並び、丘の輪郭を描く
+  const BELTS = [
+    [[-72, -66], [-58, 66]],
+    [[58, -68], [72, 60]],
+    [[-70, 70], [64, 76]],
+    [[-74, -74], [50, -66]],
+  ];
+  const beltPts = [];
+  for (const [[x0, z0], [x1, z1]] of BELTS) {
+    const len = Math.hypot(x1 - x0, z1 - z0);
+    const n = Math.floor(len / 3.6);
+    for (let i = 0; i <= n; i++) {
+      const t = i / n;
+      beltPts.push([
+        x0 + (x1 - x0) * t + (Math.random() - 0.5) * 1.4,
+        z0 + (z1 - z0) * t + (Math.random() - 0.5) * 1.4,
+      ]);
+    }
+  }
+  const beltGeo = new THREE.ConeGeometry(1.5, 6.2, 6);
+  const belt = new THREE.InstancedMesh(beltGeo, mLeaf, beltPts.length);
+  const tmpM = new THREE.Matrix4(), tmpQ = new THREE.Quaternion();
+  const tmpP = new THREE.Vector3(), tmpS = new THREE.Vector3();
+  beltPts.forEach(([x, z], i) => {
+    const s = 0.8 + Math.random() * 0.5;
+    tmpP.set(x, hJS(x, z) + 3.1 * s, z);
+    tmpS.set(s, s, s);
+    tmpQ.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.random() * 6.28);
+    belt.setMatrixAt(i, tmpM.compose(tmpP, tmpQ, tmpS));
+  });
+  belt.instanceMatrix.needsUpdate = true;
+  scene.add(belt);
+
+  // ぽつんと1本の木。美瑛の象徴
+  (function loneTree() {
+    const x = 49, z = 9, y = hJS(x, z);
+    const g = new THREE.Group();
+    g.position.set(x, y, z);
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.62, 4.2, 8), mTrunk);
+    trunk.position.y = 2.1; g.add(trunk);
+    [[0, 5.6, 4.6, 3.4], [0, 8.2, 3.6, 3.0], [0, 10.4, 2.4, 2.6]]
+      .forEach(([dx, dy, r, h], i) => {
+        const c = new THREE.Mesh(new THREE.ConeGeometry(r, h, 8), i % 2 ? mLeaf2 : mLeaf);
+        c.position.set(dx, dy, 0); g.add(c);
+      });
+    scene.add(g);
+  })();
+
+  // ── 籾殻と土埃。刈取部から湧いて後ろへ流れる
+  const DUST = 140;
+  const dustPos = new Float32Array(DUST * 3);
+  const dustVel = new Float32Array(DUST * 3);
+  const dustLife = new Float32Array(DUST);
+  const dustGeo = new THREE.BufferGeometry();
+  dustGeo.setAttribute("position", new THREE.BufferAttribute(dustPos, 3));
+  const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({
+    color: 0xd8c79a, size: 0.42, transparent: true, opacity: 0.65,
+    depthWrite: false, sizeAttenuation: true,
+  }));
+  dust.frustumCulled = false;
+  scene.add(dust);
+  let dustNext = 0, dustAcc = 0;
+
+  function emitDust(n, fwdX, fwdZ, rgX, rgZ, baseY) {
+    for (let k = 0; k < n; k++) {
+      const i = dustNext = (dustNext + 1) % DUST;
+      const side = (Math.random() - 0.5) * SWATH;
+      const x = S.x + fwdX * 4.4 + rgX * side;
+      const z = S.z + fwdZ * 4.4 + rgZ * side;
+      dustPos[i*3] = x;
+      dustPos[i*3+1] = baseY + 0.7 + Math.random() * 0.5;
+      dustPos[i*3+2] = z;
+      dustVel[i*3] = -fwdX * (1.2 + Math.random()) + (Math.random()-.5) * 1.4;
+      dustVel[i*3+1] = 0.7 + Math.random() * 1.3;
+      dustVel[i*3+2] = -fwdZ * (1.2 + Math.random()) + (Math.random()-.5) * 1.4;
+      dustLife[i] = 0.7 + Math.random() * 0.5;
+    }
+  }
+  function stepDust(dt) {
+    for (let i = 0; i < DUST; i++) {
+      if (dustLife[i] <= 0) continue;
+      dustLife[i] -= dt;
+      dustPos[i*3]   += dustVel[i*3]   * dt;
+      dustPos[i*3+1] += dustVel[i*3+1] * dt;
+      dustPos[i*3+2] += dustVel[i*3+2] * dt;
+      dustVel[i*3+1] -= 1.1 * dt;                 // ゆっくり落ちる
+      if (dustLife[i] <= 0) dustPos[i*3+1] = -999; // 画面外へ退避
+    }
+    dustGeo.attributes.position.needsUpdate = true;
+  }
+
   scene.add(new THREE.HemisphereLight(0xdcecf5, 0x5a6a3a, 0.85));
   const sun = new THREE.DirectionalLight(0xfff3d8, 0.75);
   sun.position.set(-40, 55, 30); scene.add(sun);
+
+  // ── 音。音声ファイルは持たず、その場で合成する。
+  // エンジンの唸りが麦に食い込むと重くなる、あの感じを作るのが目的
+  const Audio = {
+    on: false, ctx: null, load: 0,
+    init() {
+      if (this.ctx) return;
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      const c = this.ctx = new AC();
+      this.master = c.createGain();
+      this.master.gain.value = 0;
+      this.master.connect(c.destination);
+
+      // エンジン。スマホのスピーカーは400Hz以下をほとんど鳴らせないので、
+      // 実機の低い唸りをそのまま作らず、聞こえる帯域に基音を置く
+      this.eg = c.createGain(); this.eg.gain.value = 0.5;
+      this.lp = c.createBiquadFilter();
+      this.lp.type = "lowpass"; this.lp.frequency.value = 1400;
+      this.osc = [];
+      [[59, "sawtooth", 0.30], [118, "sawtooth", 0.55],
+       [236, "square", 0.20], [355, "sawtooth", 0.12]].forEach(([f, type, g0]) => {
+        const o = c.createOscillator();
+        o.type = type; o.frequency.value = f;
+        const g = c.createGain(); g.gain.value = g0;
+        o.connect(g); g.connect(this.lp); o.start();
+        this.osc.push({ o, base: f });
+      });
+      this.lp.connect(this.eg); this.eg.connect(this.master);
+
+      // 刈り取りの擦過音: 白色雑音をバンドパスに通す
+      const len = c.sampleRate * 2;
+      const buf = c.createBuffer(1, len, c.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      this.noise = c.createBufferSource();
+      this.noise.buffer = buf; this.noise.loop = true;
+      this.bp = c.createBiquadFilter();
+      this.bp.type = "bandpass"; this.bp.frequency.value = 2300; this.bp.Q.value = 0.6;
+      this.ng = c.createGain(); this.ng.gain.value = 0;
+      this.noise.connect(this.bp); this.bp.connect(this.ng);
+      this.ng.connect(this.master); this.noise.start();
+    },
+    enable(on, blip) {
+      this.on = on;
+      if (on) {
+        this.init();
+        if (this.ctx && this.ctx.state === "suspended") this.ctx.resume();
+      }
+      if (this.master) this.master.gain.value = on ? 0.75 : 0;
+      if (on && blip && this.ctx) this.beep();
+    },
+    // 音が生きていることが分かるよう、入にした瞬間に短く鳴らす
+    beep() {
+      const c = this.ctx, t = c.currentTime;
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = "triangle"; o.frequency.value = 620;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.3, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+      o.connect(g); g.connect(this.master);
+      o.start(t); o.stop(t + 0.25);
+    },
+    // v=速さ, load=刈っている量(0〜1)
+    update(v, load, dt) {
+      if (!this.on || !this.ctx) return;
+      this.load += (load - this.load) * Math.min(1, dt * 6);
+      const rpm = 0.74 + v / SPEED * 0.28 + this.load * 0.14;
+      for (const s of this.osc) s.o.frequency.value = s.base * rpm;
+      // 麦に食い込むと高い成分が削れて重く唸る
+      this.lp.frequency.value = 1050 + 1250 * (1 - this.load) + v * 18;
+      this.eg.gain.value = 0.46 + this.load * 0.24;
+      this.ng.gain.value = this.load * 0.22;
+    },
+  };
 
   // ── 状態
   // 畑の左端に刈り取り部の左角をぴたりと合わせ、手前の外から進入する。
   // 畑の直線部は x=±41 なので、中心を -41 + 刈り幅/2 に置くと端が揃う
   const START = { x: -41 + SWATH / 2, z: -56, a: 0 };
   const S = { x: 0, z: 0, a: 0, run: false, L: false, R: false,
-              hold: 0, straight: 0, v: 0, prev: null };
+              hold: 0, straight: 0, v: 0, prev: null, t: 0 };
   // 刈取部は幅のある棒なので、両端の位置を返す。旋回中は端が弧を描く
   function headerEnds() {
     const fx = Math.sin(S.a), fz = Math.cos(S.a);
@@ -448,9 +715,12 @@
 
   function reset() {
     mctx.clearRect(0, 0, MASK, MASK);
-    cutCell.fill(0); cutCells = 0;
+    maskCut.fill(0); maskCutCount = 0;
+    cutGeo.fill(0); underPrev.fill(0);
+    entries = 0; wasteEntries = 0;
     S.x = START.x; S.z = START.z; S.a = START.a; S.L = S.R = false;
-    S.hold = 0; S.straight = 0; S.v = SPEED;
+    S.hold = 0; S.straight = 0; S.v = SPEED; S.t = 0;
+    lastUnder = [];
     camInit = false;
     S.prev = headerEnds();
     maskTex.needsUpdate = true;
@@ -459,6 +729,7 @@
   // 刈り取り: 刈取部の両端が描いた軌跡で囲まれる四角形を塗る。
   // 中心線を太く塗る方式だと、旋回中に外側が取り残される
   function harvest(p, c) {
+    let fresh = 0;                    // この一瞬で新たに刈れた升目の数
     const quad = [[p[0], p[1]], [p[2], p[3]], [c[2], c[3]], [c[0], c[1]]];
 
     mctx.fillStyle = mctx.strokeStyle = "#fff";
@@ -470,7 +741,9 @@
     mctx.fill(); mctx.stroke();
     maskTex.needsUpdate = true;
 
-    // 升目の記録も同じ四角形で判定する
+    // ここからは二度刈りの計測(幾何)。刈り取り率そのものはマスクから読む。
+    // 「刈取部の下に新たに入った升目」を数え、その升目がすでに刈り済みなら
+    // 二度刈り。同じ升目に何フレーム居ても1回しか数えない
     let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
     for (const [qx, qz] of quad) {
       if (qx < minX) minX = qx; if (qx > maxX) maxX = qx;
@@ -480,27 +753,41 @@
     const gx1 = Math.min(GN-1, Math.ceil((maxX + WORLD/2) / GS));
     const gz0 = Math.max(0, Math.floor((minZ + WORLD/2) / GS));
     const gz1 = Math.min(GN-1, Math.ceil((maxZ + WORLD/2) / GS));
+    const nowUnder = [];
     for (let gz = gz0; gz <= gz1; gz++) {
       for (let gx = gx0; gx <= gx1; gx++) {
         const i = gz*GN + gx;
-        if (!inField[i] || cutCell[i]) continue;
+        if (!inField[i]) continue;
         const px = -WORLD/2 + (gx+.5)*GS, pz = -WORLD/2 + (gz+.5)*GS;
-        // 旋回中は左右が逆向きに動いて形がねじれるため、凸形状を前提にしない
-        let inside = false;
+        // 升目の中心が四角形の内側か。旋回中にねじれる形でも正しく判定できる
+        let odd = false;
         for (let k = 0, j = 3; k < 4; j = k++) {
           const [ax, az] = quad[k], [bx, bz] = quad[j];
           if ((az > pz) !== (bz > pz) &&
-              px < (bx - ax) * (pz - az) / (bz - az) + ax) inside = !inside;
+              px < (bx - ax) * (pz - az) / (bz - az) + ax) odd = !odd;
         }
-        if (inside) { cutCell[i] = 1; cutCells++; }
+        if (!odd) continue;
+        nowUnder.push(i);
+        if (!underPrev[i]) {                // この升目に新たに進入した
+          entries++;
+          if (cutGeo[i]) wasteEntries++;    // 刈り済みの場所へ入り直した
+        }
+        if (!cutGeo[i]) { cutGeo[i] = 1; fresh++; }
       }
     }
+    // 「前フレームに下にあった」を今フレームぶんに置き換える
+    for (let k = 0; k < lastUnder.length; k++) underPrev[lastUnder[k]] = 0;
+    for (let k = 0; k < nowUnder.length; k++) underPrev[nowUnder[k]] = 1;
+    lastUnder = nowUnder;
+    return fresh;
   }
+  let lastUnder = [];
 
   // ── 画面の更新
   const mapCv = document.getElementById("map"), mapCtx = mapCv.getContext("2d");
   let mapT = 0;
-  function drawMap() {
+  const FINISH = 99.5;      // これ以上刈れたら終了(%)。見えている麦が無ければ100になる
+  function drawMap(pct) {
     const w = mapCv.width, h = mapCv.height;
     mapCtx.fillStyle = "#4e7b3f"; mapCtx.fillRect(0, 0, w, h);
     // 畑の範囲(マスクと同じ座標系で縮小表示)
@@ -515,10 +802,71 @@
     mapCtx.globalAlpha = 0.92;
     mapCtx.drawImage(mcv, 0, 0, w, h);
     mapCtx.globalAlpha = 1;
+    // 終盤は刈り残しが小さすぎて地図でも見えないので、赤い印で示す。
+    // 1升も飛ばさない(飛ばすと孤立した刈り残しが地図に出ない)
+    if (pct >= 92) {
+      mapCtx.fillStyle = "#e2402c";
+      for (let gz = 0; gz < GN; gz++) {
+        for (let gx = 0; gx < GN; gx++) {
+          const i = gz*GN + gx;
+          if (!inField[i] || maskCut[i]) continue;
+          const x = -WORLD/2 + (gx+.5)*GS, z = -WORLD/2 + (gz+.5)*GS;
+          mapCtx.fillRect(w/2 + x*sx - 1.5, h/2 + z*sz - 1.5, 3, 3);
+        }
+      }
+    }
     mapCtx.fillStyle = "#d92";
     mapCtx.beginPath();
     mapCtx.arc(w/2 + S.x*sx, h/2 + S.z*sz, 2.4, 0, 7);
     mapCtx.fill();
+  }
+
+  // ── 終わり方。刈り終えたら採点し、刈り跡を真上から見せる
+  function renderSatellite() {
+    const s = document.getElementById("sat"), sc = s.getContext("2d");
+    const w = s.width, h = s.height;
+    const tmp = document.createElement("canvas");
+    tmp.width = w; tmp.height = h;
+    const tc = tmp.getContext("2d");
+    tc.fillStyle = "#4e7b3f"; tc.fillRect(0, 0, w, h);      // 周りの畑
+    tc.save();
+    tc.translate(w/2, h/2); tc.scale(w / WORLD, h / WORLD);
+    tc.fillStyle = "#c9a63f";                                // 未収穫の金色
+    tc.beginPath(); tc.roundRect(-41, -51, 82, 102, 9); tc.fill();
+    tc.restore();
+    tc.globalAlpha = 0.95; tc.drawImage(mcv, 0, 0, w, h); tc.globalAlpha = 1;
+    sc.imageSmoothingEnabled = false;
+    sc.drawImage(tmp, 0, 0);
+    const img = sc.getImageData(0, 0, w, h);                 // 衛星らしい粒状感
+    for (let i = 0; i < img.data.length; i += 4) {
+      const n = (Math.random() - 0.5) * 20;
+      img.data[i] += n; img.data[i+1] += n; img.data[i+2] += n;
+    }
+    sc.putImageData(img, 0, 0);
+  }
+
+  function rankOf(sec, waste) {
+    if (sec < 95 && waste < 0.22) return ["美瑛の名人", "無駄がない。本職の走りです。"];
+    if (sec < 125 && waste < 0.35) return ["一人前", "きれいに刈れています。"];
+    if (sec < 165) return ["ひと仕事おわり", "畑は全部刈れました。次はもっと速く。"];
+    return ["日が暮れました", "往復で攻めると、ぐっと早くなります。"];
+  }
+
+  function finish() {
+    S.run = false;
+    Audio.update(0, 0, 1);
+    if (Audio.on && Audio.master) Audio.master.gain.value = 0;
+    // 二度刈り = 刈り済みの升目に入り直した回数 / 升目に進入した全回数
+    const waste = entries > 0 ? wasteEntries / entries : 0;
+    const [rank, note] = rankOf(S.t, waste);
+    document.getElementById("endRank").textContent = rank;
+    document.getElementById("endDetail").innerHTML =
+      `${S.t.toFixed(1)}秒 ／ 二度刈り ${Math.round(waste * 100)}%<br>
+       <span style="opacity:.82">${note}</span>`;
+    renderSatellite();
+    document.getElementById("ovEnd").classList.remove("hidden");
+    // 計測が無い環境で例外を出すと描画ループごと止まるので、あれば送るだけ
+    if (typeof gtag === "function") gtag("event", "game_finish", { seconds: Math.round(S.t) });
   }
 
   function step(dt) {
@@ -540,8 +888,22 @@
     S.z = Math.max(-80, Math.min(80, S.z));
 
     const cur = headerEnds();
-    harvest(S.prev, cur);
+    const fresh = harvest(S.prev, cur);
     S.prev = cur;
+
+    // 刈っている量。満載に近いほど音が重くなり、埃も増える
+    const full = (SWATH * v * dt) / (GS * GS);
+    const load = Math.max(0, Math.min(1, fresh / Math.max(1, full)));
+    Audio.update(v, load, dt);
+    const fwdX = Math.sin(S.a), fwdZ = Math.cos(S.a);
+    if (load > 0.12) {
+      dustAcc += load * v * dt * 2.6;
+      const n = Math.floor(dustAcc);
+      if (n > 0) {
+        dustAcc -= n;
+        emitDust(Math.min(n, 4), fwdX, fwdZ, Math.cos(S.a), -Math.sin(S.a), hJS(S.x, S.z));
+      }
+    }
 
     // X軸まわりは正の向きで上側が前へ動く。リールは下側が後ろへ掃いて
     // 麦を刈刃に送り込むので、転がる車輪と同じ向きになる
@@ -614,13 +976,19 @@
     const dt = Math.min(0.05, (ts - (last || ts)) / 1000);
     last = ts;
     if (view === "show") orbit += dt * 0.38;   // 外観はゆっくり回り込む
+    stepDust(dt);
     if (S.run) {
+      S.t += dt;
       step(dt);
-      const pct = cutCells / totalCells * 100;
-      document.getElementById("hud").textContent =
-        `刈り取り ${pct >= 99.4 ? 100 : Math.floor(pct)}%`;
       mapT += dt;
-      if (mapT > 0.25) { mapT = 0; drawMap(); }
+      if (mapT > 0.25) {
+        mapT = 0;
+        const pct = countFromMask();          // 見えている麦と同じ元から数える
+        document.getElementById("hud").textContent =
+          `刈り取り ${pct >= FINISH ? 100 : Math.floor(pct)}%　${S.t.toFixed(0)}秒`;
+        drawMap(pct);
+        if (pct >= FINISH) finish();
+      }
     }
     place();
     renderer.render(scene, camera);
@@ -682,13 +1050,31 @@
   viewBtn.addEventListener("touchend", (e) => { e.preventDefault(); e.stopPropagation(); });
   addEventListener("keydown", (e) => { if (e.key === "v" || e.key === "V") toggleView(); });
 
-  document.getElementById("start").addEventListener("click", () => {
+  const sndBtn = document.getElementById("snd");
+  let sndLock = 0;
+  const onSnd = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const now = performance.now();
+    if (now - sndLock < 400) return;
+    sndLock = now;
+    Audio.enable(!Audio.on, true);
+    sndBtn.textContent = "音: " + (Audio.on ? "入" : "切");
+  };
+  sndBtn.addEventListener("touchstart", onSnd, { passive: false });
+  sndBtn.addEventListener("click", onSnd);
+  sndBtn.addEventListener("touchend", (e) => { e.preventDefault(); e.stopPropagation(); });
+
+  const begin = () => {
     reset();
     document.getElementById("ov").classList.add("hidden");
+    document.getElementById("ovEnd").classList.add("hidden");
+    if (Audio.on) Audio.enable(true);        // 中断していた音を戻す
     S.run = true;
-  });
+  };
+  document.getElementById("start").addEventListener("click", begin);
+  document.getElementById("again").addEventListener("click", begin);
 
-  resize(); reset(); drawMap();
+  resize(); reset(); drawMap(0);
   requestAnimationFrame(loop);
 })();
 </script>
