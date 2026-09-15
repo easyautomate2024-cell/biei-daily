@@ -236,31 +236,44 @@
   mcv.width = mcv.height = MASK;
   const mctx = mcv.getContext("2d");
   const maskTex = new THREE.CanvasTexture(mcv);
-  maskTex.minFilter = maskTex.magFilter = THREE.LinearFilter;
+  // 補間せず画素をそのまま読む。数える側(JS)と描く側(GPU)が同じ画素を見るため
+  maskTex.minFilter = maskTex.magFilter = THREE.NearestFilter;
   maskTex.wrapS = maskTex.wrapT = THREE.ClampToEdgeWrapping;
   // WebGLは既定でテクスチャを上下反転して読む。塗った座標とずれるので止める
   maskTex.flipY = false;
   const w2m = (v) => (v + WORLD / 2) / WORLD * MASK;   // ワールド→マスク画素
 
-  // 刈り取り率を数えるための升目。
-  // 「刈れたか」は幾何で別計算せず、麦の描画が読んでいるマスクをそのまま読む。
-  // 見えている麦が無ければ100%、見えていれば100%未満——定義上ずれない
+  // ── 二度刈りを測るための粗い升目(0.82m)。刈り取り率そのものはここでは数えない
   const GN = 220, GS = WORLD / GN;
-  const inField = new Uint8Array(GN * GN);   // 採点対象の升目
-  const cellPix = new Int32Array(GN * GN);   // 各升目の中心が読むマスク画素
-  const maskCut = new Uint8Array(GN * GN);   // マスクから読んだ「刈れた」
-  const cutGeo = new Uint8Array(GN * GN);    // 二度刈り判定用(幾何)
+  const inCoarse = new Uint8Array(GN * GN);  // 畑の中の升目
+  const cutGeo = new Uint8Array(GN * GN);    // 一度でも刈取部が通った升目
   const underPrev = new Uint8Array(GN * GN); // 前フレームに刈取部の下にあった升目
-  let totalCells = 0, maskCutCount = 0;
   let entries = 0, wasteEntries = 0;         // 進入回数 / うち刈り済みへの進入
   for (let gz = 0; gz < GN; gz++) {
     for (let gx = 0; gx < GN; gx++) {
-      const i = gz * GN + gx;
       const x = -WORLD/2 + (gx + .5) * GS, z = -WORLD/2 + (gz + .5) * GS;
-      if (fieldSDF(x, z) < EDGE) { inField[i] = 1; totalCells++; }
+      if (fieldSDF(x, z) < EDGE) inCoarse[gz * GN + gx] = 1;
+    }
+  }
+
+  // ── 刈り取り率を数える点は、麦を描いているメッシュの頂点そのもの。
+  // 描く側と同じ位置・同じ画素・同じ閾値で判定するので、
+  // 「見えている麦が残っているのに100%」も「全部刈ったのに届かない」も起きない
+  const CROP_W = 112, CROP_D = 128, CROP_SEG_X = 224, CROP_SEG_Z = 256;
+  const NX = CROP_SEG_X + 1, NZ = CROP_SEG_Z + 1, FSTEP = CROP_W / CROP_SEG_X;
+  const inFine = new Uint8Array(NX * NZ);    // 描かれる範囲(畑の縁の内側)の頂点
+  const finePix = new Int32Array(NX * NZ);   // その頂点が読むマスク画素
+  const fineCut = new Uint8Array(NX * NZ);   // 刈れている頂点
+  let totalFine = 0, cutFine = 0;
+  for (let j = 0; j < NZ; j++) {
+    for (let i = 0; i < NX; i++) {
+      const k = j * NX + i;
+      const x = -CROP_W / 2 + i * FSTEP, z = -CROP_D / 2 + j * FSTEP;
+      if (fieldSDF(x, z) <= EDGE) { inFine[k] = 1; totalFine++; }
+      // シェーダーの floor(uv*MASK) と同じ式で画素を決める
       const mx = Math.min(MASK - 1, Math.floor(w2m(x)));
       const mz = Math.min(MASK - 1, Math.floor(w2m(z)));
-      cellPix[i] = (mz * MASK + mx) * 4;
+      finePix[k] = (mz * MASK + mx) * 4;
     }
   }
 
@@ -268,14 +281,15 @@
   function countFromMask() {
     const px = mctx.getImageData(0, 0, MASK, MASK).data;
     let n = 0;
-    for (let i = 0; i < GN * GN; i++) {
-      if (!inField[i]) continue;
-      const c = px[cellPix[i]] >= 128 ? 1 : 0;
-      maskCut[i] = c; n += c;
+    for (let k = 0; k < NX * NZ; k++) {
+      if (!inFine[k]) continue;
+      const c = px[finePix[k]] >= 128 ? 1 : 0;   // シェーダーの vCut > 0.5 と同じ線
+      fineCut[k] = c; n += c;
     }
-    maskCutCount = n;
-    return n / totalCells * 100;
+    cutFine = n;
+    return n / totalFine * 100;
   }
+  const standing = () => totalFine - cutFine;   // まだ見えている麦の頂点の数
 
   // ── 描画の下ごしらえ
   const cv = document.getElementById("gl");
@@ -372,7 +386,8 @@
       ${HEIGHT_GLSL}
       void main(){
         vP = vec2(position.x, -position.y);
-        vec2 uv = (vP + ${(WORLD/2).toFixed(1)}) / ${WORLD.toFixed(1)};
+        // 画素の中心を狙って読む。JS側の floor と同じ画素になる
+        vec2 uv = (floor((vP + ${(WORLD/2).toFixed(1)}) / ${WORLD.toFixed(1)} * ${MASK.toFixed(1)}) + 0.5) / ${MASK.toFixed(1)};
         vCut = texture2D(mask, uv).r;
         // 畑の縁: 内側 ${EDGE.toFixed(1)}m の線で 0.5 になる。採点の升目もこの線で切る
         vInside = 1.0 - smoothstep(${(EDGE * 2).toFixed(1)}, 0.0, fieldSDF(vP));
@@ -404,7 +419,8 @@
         gl_FragColor = vec4(col, 1.0);
       }`,
   });
-  const crop = new THREE.Mesh(new THREE.PlaneGeometry(112, 128, 224, 256), cropMat);
+  const crop = new THREE.Mesh(
+    new THREE.PlaneGeometry(CROP_W, CROP_D, CROP_SEG_X, CROP_SEG_Z), cropMat);
   crop.rotation.x = -Math.PI / 2;
   scene.add(crop);
 
@@ -715,7 +731,7 @@
 
   function reset() {
     mctx.clearRect(0, 0, MASK, MASK);
-    maskCut.fill(0); maskCutCount = 0;
+    fineCut.fill(0); cutFine = 0;
     cutGeo.fill(0); underPrev.fill(0);
     entries = 0; wasteEntries = 0;
     S.x = START.x; S.z = START.z; S.a = START.a; S.L = S.R = false;
@@ -757,7 +773,7 @@
     for (let gz = gz0; gz <= gz1; gz++) {
       for (let gx = gx0; gx <= gx1; gx++) {
         const i = gz*GN + gx;
-        if (!inField[i]) continue;
+        if (!inCoarse[i]) continue;
         const px = -WORLD/2 + (gx+.5)*GS, pz = -WORLD/2 + (gz+.5)*GS;
         // 升目の中心が四角形の内側か。旋回中にねじれる形でも正しく判定できる
         let odd = false;
@@ -786,7 +802,7 @@
   // ── 画面の更新
   const mapCv = document.getElementById("map"), mapCtx = mapCv.getContext("2d");
   let mapT = 0;
-  const FINISH = 99.5;      // これ以上刈れたら終了(%)。見えている麦が無ければ100になる
+  const FINISH_LEFT = 3;    // 残っている麦の頂点がこれ以下なら終了(3頂点≈1㎡未満)
   function drawMap(pct) {
     const w = mapCv.width, h = mapCv.height;
     mapCtx.fillStyle = "#4e7b3f"; mapCtx.fillRect(0, 0, w, h);
@@ -806,11 +822,11 @@
     // 1升も飛ばさない(飛ばすと孤立した刈り残しが地図に出ない)
     if (pct >= 92) {
       mapCtx.fillStyle = "#e2402c";
-      for (let gz = 0; gz < GN; gz++) {
-        for (let gx = 0; gx < GN; gx++) {
-          const i = gz*GN + gx;
-          if (!inField[i] || maskCut[i]) continue;
-          const x = -WORLD/2 + (gx+.5)*GS, z = -WORLD/2 + (gz+.5)*GS;
+      for (let j = 0; j < NZ; j++) {
+        for (let i = 0; i < NX; i++) {
+          const k = j * NX + i;
+          if (!inFine[k] || fineCut[k]) continue;
+          const x = -CROP_W / 2 + i * FSTEP, z = -CROP_D / 2 + j * FSTEP;
           mapCtx.fillRect(w/2 + x*sx - 1.5, h/2 + z*sz - 1.5, 3, 3);
         }
       }
@@ -984,10 +1000,12 @@
       if (mapT > 0.25) {
         mapT = 0;
         const pct = countFromMask();          // 見えている麦と同じ元から数える
+        // 終わりは「見えている麦の頂点が残り数個以下」。見えているのに終わることはない
+        const done = standing() <= FINISH_LEFT;
         document.getElementById("hud").textContent =
-          `刈り取り ${pct >= FINISH ? 100 : Math.floor(pct)}%　${S.t.toFixed(0)}秒`;
+          `刈り取り ${done ? 100 : Math.min(99, Math.floor(pct))}%　${S.t.toFixed(0)}秒`;
         drawMap(pct);
-        if (pct >= FINISH) finish();
+        if (done) finish();
       }
     }
     place();
