@@ -297,7 +297,7 @@
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   const scene = new THREE.Scene();
   // 遠くの丘と木は空の色に溶けていく。畑(最長115m先)には掛からない距離から
-  const SKY = new THREE.Color(0x9fc3d8), FOG_NEAR = 120, FOG_FAR = 200;
+  const SKY = new THREE.Color(0x9fc3d8), FOG_NEAR = 130, FOG_FAR = 230;
   scene.background = SKY;
   scene.fog = new THREE.Fog(SKY, FOG_NEAR, FOG_FAR);
   const camera = new THREE.PerspectiveCamera(58, 1, 0.5, 400);
@@ -380,7 +380,7 @@
       }`,
   });
   // 描く地面は、畑や判定に使う WORLD より広く取り、霧の向こうまで丘を続ける
-  const GROUND = 520;
+  const GROUND = 580;       // 端がカメラから FOG_FAR より遠くなる大きさ
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(GROUND, GROUND, 200, 200), groundMat);
   ground.rotation.x = -Math.PI / 2;
   scene.add(ground);
@@ -591,14 +591,38 @@
     });
     scene.add(g);
   }
+  const mWall = new THREE.MeshLambertMaterial({ color: 0xeae4d3 });   // 小屋の壁(生成り)
+  const mRoof = new THREE.MeshLambertMaterial({ color: 0xb5342a });   // 赤い屋根
+  function hut(x, z, rot = 0, s = 1) {
+    // 赤い屋根の小屋。美瑛の丘では木立の陰から赤い屋根がのぞく
+    const g = new THREE.Group();
+    g.position.set(x, hJS(x, z) - 0.3, z); g.rotation.y = rot; g.scale.setScalar(s);
+    const W = 7, D = 5, H = 3.0, R = 2.4;                 // 幅・奥行・壁の高さ・屋根の高さ
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(W, H, D), mWall);
+    wall.position.y = H / 2; g.add(wall);
+    // 妻側の三角。押し出して屋根裏をふさぐ
+    const tri = new THREE.Shape([new THREE.Vector2(-W / 2, 0), new THREE.Vector2(W / 2, 0), new THREE.Vector2(0, R)]);
+    const gable = new THREE.Mesh(new THREE.ExtrudeGeometry(tri, { depth: D, bevelEnabled: false }), mWall);
+    gable.position.set(0, H, -D / 2); g.add(gable);
+    // 屋根板2枚。軒を少し張り出す
+    const len = Math.hypot(W / 2, R) + 0.5, pitch = Math.atan2(R, W / 2);
+    [-1, 1].forEach(sgn => {
+      const p = new THREE.Mesh(new THREE.BoxGeometry(len, 0.22, D + 0.8), mRoof);
+      p.position.set(sgn * W / 4, H + R / 2 + 0.1, 0);
+      p.rotation.z = -sgn * pitch;
+      g.add(p);
+    });
+    scene.add(g);
+  }
   // 置き場所は畑から離れた高み(どのカメラにも触れない距離)。四方に均等に置くと
   // 作り物に見えるので、寄せるところは寄せ、何もない方角も残す
   // (+z 向きに走るとき、画面の左が +x 側)
   oak(-36, 86); oak(-30.5, 86.5, 0.55); oak(-25, 86);   // 親子の木。北の稜線に3本
   poplar(-75, 95, 0.9);                                // その左手、少し低い所にぽつんと1本
-  // 南東の丘には、農家の屋敷林のような木立をひとまとまり
-  oak(82, -64); oak(74, -58, 0.85); oak(90, -58, 0.7);
-  poplar(88, -70, 0.9); poplar(78, -72, 0.75); spruce(70, -68, 0.9);
+  // 南東の遠い丘には、農家の屋敷林のような木立をひとまとまり。木陰に赤い屋根の小屋
+  oak(88, -86); oak(80, -80, 0.85); oak(96, -80, 0.7);
+  poplar(94, -92, 0.9); poplar(84, -94, 0.75); spruce(76, -90, 0.9);
+  hut(70, -82, 0.4);
   spruce(-20, -118);                                   // 南の遠く。南へ走ると霧の中から現れる
 
   // ── 籾殻と土埃。刈取部から湧いて後ろへ流れる
