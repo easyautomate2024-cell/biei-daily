@@ -297,10 +297,10 @@
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   const scene = new THREE.Scene();
   // 遠くの丘と木は空の色に溶けていく。畑(最長115m先)には掛からない距離から
-  const SKY = new THREE.Color(0x9fc3d8), FOG_NEAR = 130, FOG_FAR = 330;
+  const SKY = new THREE.Color(0x9fc3d8), FOG_NEAR = 130, FOG_FAR = 1400;
   scene.background = SKY;
   scene.fog = new THREE.Fog(SKY, FOG_NEAR, FOG_FAR);
-  const camera = new THREE.PerspectiveCamera(58, 1, 0.5, 700);
+  const camera = new THREE.PerspectiveCamera(58, 1, 0.5, 1700);
 
   const LIGHT = "vec3 L = normalize(vec3(-0.55, 0.72, 0.42));";
 
@@ -312,9 +312,11 @@
       varying float vDist;
       ${HEIGHT_GLSL}
       void main(){
-        vP = vec2(position.x, -position.y);   // 平面をXZに寝かせた後の座標
-        vec3 p = vec3(position.x, position.y, hh(vP));
-        vec4 mv = modelViewMatrix * vec4(p, 1.0);
+        // 地面は何枚かの平面を並べて描くので、ワールド座標で高さを付ける
+        vec4 wp = modelMatrix * vec4(position, 1.0);
+        wp.y = hh(wp.xz);
+        vP = wp.xz;
+        vec4 mv = viewMatrix * wp;
         vDist = -mv.z;
         gl_Position = projectionMatrix * mv;
       }`,
@@ -379,11 +381,21 @@
         gl_FragColor = vec4(col, 1.0);
       }`,
   });
-  // 描く地面は、畑や判定に使う WORLD より広く取り、霧の向こうまで丘を続ける
-  const GROUND = 820;       // 端がカメラから FOG_FAR より遠くなる大きさ
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(GROUND, GROUND, 200, 200), groundMat);
-  ground.rotation.x = -Math.PI / 2;
-  scene.add(ground);
+  // 描く地面は、畑や判定に使う WORLD より広く取り、霧の向こうまで丘を続ける。
+  // 近くは細かく、遠くは粗く分けて頂点数を抑える。端はカメラから FOG_FAR より遠く
+  const GROUND = 820, FAR = 1500;
+  function groundPatch(w, d, x, z, seg) {
+    const m = new THREE.Mesh(
+      new THREE.PlaneGeometry(w, d, Math.ceil(w / seg), Math.ceil(d / seg)), groundMat);
+    m.rotation.x = -Math.PI / 2; m.position.set(x, 0, z);
+    scene.add(m);
+  }
+  const G2 = GROUND / 2, mid = (FAR + G2) / 2;
+  groundPatch(GROUND, GROUND, 0, 0, 4.1);
+  groundPatch(2 * FAR, FAR - G2, 0, mid, 12);     // 北
+  groundPatch(2 * FAR, FAR - G2, 0, -mid, 12);    // 南
+  groundPatch(FAR - G2, GROUND, mid, 0, 12);      // 東
+  groundPatch(FAR - G2, GROUND, -mid, 0, 12);     // 西
 
   // 立っている麦。刈った所は高さ0になって消える
   const cropMat = new THREE.ShaderMaterial({
@@ -620,10 +632,10 @@
   oak(-36, 86); oak(-30.5, 86.5, 0.55); oak(-25, 86);   // 親子の木。北の稜線に3本
   poplar(-75, 95, 0.9);                                // その左手、少し低い所にぽつんと1本
   // 南東の遠い丘には、農家の屋敷林のような木立をひとまとまり。木陰に赤い屋根の小屋
-  // (東側の通路の北端から約215m。霧で4割ほど溶ける距離)
-  oak(98, -142, 1.15); oak(90, -136); oak(106, -136, 0.8);
-  poplar(104, -148, 1.05); poplar(94, -150, 0.85); spruce(86, -146);
-  hut(80, -138, 0.4, 1.3);
+  // (東側の通路の北端から約660m。霧で4割ほど溶ける距離。遠い分だけ大きめに)
+  oak(236, -566, 1.5); oak(226, -558, 1.3); oak(246, -558, 1.05);
+  poplar(244, -574, 1.35); poplar(231, -576, 1.1); spruce(220, -571, 1.3);
+  hut(213, -561, 0.4, 2.0);
   spruce(-20, -118);                                   // 南の遠く。南へ走ると霧の中から現れる
 
   // ── 籾殻と土埃。刈取部から湧いて後ろへ流れる
