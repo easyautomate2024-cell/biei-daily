@@ -296,8 +296,10 @@
   const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x9fc3d8);
-  scene.fog = new THREE.Fog(0x9fc3d8, 90, 175);
+  // 遠くの丘と木は空の色に溶けていく。畑(最長115m先)には掛からない距離から
+  const SKY = new THREE.Color(0x9fc3d8), FOG_NEAR = 120, FOG_FAR = 200;
+  scene.background = SKY;
+  scene.fog = new THREE.Fog(SKY, FOG_NEAR, FOG_FAR);
   const camera = new THREE.PerspectiveCamera(58, 1, 0.5, 400);
 
   const LIGHT = "vec3 L = normalize(vec3(-0.55, 0.72, 0.42));";
@@ -307,15 +309,19 @@
     uniforms: { mask: { value: maskTex } },
     vertexShader: `
       varying vec2 vP;
+      varying float vDist;
       ${HEIGHT_GLSL}
       void main(){
         vP = vec2(position.x, -position.y);   // 平面をXZに寝かせた後の座標
         vec3 p = vec3(position.x, position.y, hh(vP));
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+        vec4 mv = modelViewMatrix * vec4(p, 1.0);
+        vDist = -mv.z;
+        gl_Position = projectionMatrix * mv;
       }`,
     fragmentShader: `
       precision highp float;
       varying vec2 vP;
+      varying float vDist;
       uniform sampler2D mask;
       ${HEIGHT_GLSL}
       float hash(float n){ return fract(sin(n) * 43758.5453); }
@@ -367,10 +373,15 @@
         ${LIGHT}
         float d = max(dot(nrm(vP), L), 0.0);
         vec3 col = base * (0.45 + 0.75 * d);
+        // ShaderMaterial には scene.fog が掛からないので、同じ式で空に溶かす
+        col = mix(col, vec3(${SKY.r.toFixed(3)}, ${SKY.g.toFixed(3)}, ${SKY.b.toFixed(3)}),
+                  smoothstep(${FOG_NEAR.toFixed(1)}, ${FOG_FAR.toFixed(1)}, vDist));
         gl_FragColor = vec4(col, 1.0);
       }`,
   });
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(WORLD, WORLD, 140, 140), groundMat);
+  // 描く地面は、畑や判定に使う WORLD より広く取り、霧の向こうまで丘を続ける
+  const GROUND = 520;
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(GROUND, GROUND, 200, 200), groundMat);
   ground.rotation.x = -Math.PI / 2;
   scene.add(ground);
 
@@ -537,85 +548,56 @@
   wheel(-1.45, -3.5, 0.82, 0.62, true); wheel(1.45, -3.5, 0.82, 0.62, true);
   scene.add(rig);
 
-  // ── 丘に立つ木。美瑛の風景を決めているのは、畑と、この木立
-  const mLarch = new THREE.MeshLambertMaterial({ color: 0x4f7a3a });   // カラマツ(明るい黄緑)
-  const mLarchD = new THREE.MeshLambertMaterial({ color: 0x3f6530 });
+  // ── 丘に立つ木。美瑛の丘は、遠くの稜線にぽつんと木が立っているのが景色になる。
+  // 名前のついた木にならい、種類の違う木を数本だけ、畑から離れた高みに置く
   const mPoplar = new THREE.MeshLambertMaterial({ color: 0x3f7d3c });  // ポプラ
+  const mPoplar2 = new THREE.MeshLambertMaterial({ color: 0x3f6530 });
   const mOak = new THREE.MeshLambertMaterial({ color: 0x2e5a2c });     // カシワ(濃い)
   const mOak2 = new THREE.MeshLambertMaterial({ color: 0x386c34 });
+  const mSpruce = new THREE.MeshLambertMaterial({ color: 0x2a4d2e });  // トウヒ(青みの濃緑)
   const mTrunk = new THREE.MeshLambertMaterial({ color: 0x5a4632 });
-  const mTrunkD = new THREE.MeshLambertMaterial({ color: 0x3e3024 });
 
-  // 防風林。美瑛の防風林はカラマツの列で、細く高い木が定規で引いたように
-  // 一直線に並ぶ。列方向にだけ僅かにずらし、列から外れる方向には散らさない
-  const BELTS = [
-    [[-72, -66], [-58, 66]],
-    [[58, -68], [72, 60]],
-    [[-70, 70], [64, 76]],
-    [[-74, -86], [50, -82]],   // 南側は広角・外観カメラの後ろに置く
-  ];
-  const larchPts = [];
-  for (const [[x0, z0], [x1, z1]] of BELTS) {
-    const len = Math.hypot(x1 - x0, z1 - z0);
-    const ux = (x1 - x0) / len, uz = (z1 - z0) / len;   // 列方向
-    const n = Math.floor(len / 2.8);
-    for (let row = 0; row < 2; row++) {                 // 2列植え
-      const off = row ? 2.4 : 0;
-      for (let i = 0; i <= n; i++) {
-        const t = i / n, j = (Math.random() - 0.5) * 0.6;
-        larchPts.push([
-          x0 + (x1 - x0) * t + ux * j - uz * off,
-          z0 + (z1 - z0) * t + uz * j + ux * off,
-          0.85 + Math.random() * 0.3,                    // 高さのばらつき
-        ]);
-      }
-    }
-  }
-  // 樹冠(細長い円錐)と幹を別々のインスタンスで描く
-  const crownGeo = new THREE.ConeGeometry(1.25, 12.5, 7);
-  const trunkGeo = new THREE.CylinderGeometry(0.16, 0.3, 5.5, 6);
-  const crowns = new THREE.InstancedMesh(crownGeo, mLarch, larchPts.length);
-  const trunks = new THREE.InstancedMesh(trunkGeo, mTrunkD, larchPts.length);
-  const tmpM = new THREE.Matrix4(), tmpQ = new THREE.Quaternion();
-  const tmpP = new THREE.Vector3(), tmpS = new THREE.Vector3(), yAxis = new THREE.Vector3(0, 1, 0);
-  larchPts.forEach(([x, z, s], i) => {
-    const y = hJS(x, z);
-    tmpQ.setFromAxisAngle(yAxis, Math.random() * 6.28);
-    tmpS.set(s, s, s);
-    tmpP.set(x, y + 2.75 * s, z);
-    trunks.setMatrixAt(i, tmpM.compose(tmpP, tmpQ, tmpS));
-    tmpP.set(x, y + (5.5 + 6.25) * s, z);               // 幹の上に樹冠
-    crowns.setMatrixAt(i, tmpM.compose(tmpP, tmpQ, tmpS));
-  });
-  crowns.instanceMatrix.needsUpdate = trunks.instanceMatrix.needsUpdate = true;
-  scene.add(crowns, trunks);
-
-  // ぽつんと立つ木。美瑛で名前のついた木は、ほぼポプラかカシワ
-  function poplar(x, z) {
+  function poplar(x, z, s = 1) {
     // ケンとメリーの木のような、細く高いポプラ。ほうきを立てたような形
-    const g = new THREE.Group(); g.position.set(x, hJS(x, z), z);
+    const g = new THREE.Group(); g.position.set(x, hJS(x, z), z); g.scale.setScalar(s);
     const t = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.7, 7, 8), mTrunk);
     t.position.y = 3.5; g.add(t);
     const c = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 14), mPoplar);
     c.scale.set(2.6, 11.5, 2.6); c.position.y = 16.5; g.add(c);
-    const c2 = new THREE.Mesh(new THREE.SphereGeometry(1, 8, 10), mLarchD);
+    const c2 = new THREE.Mesh(new THREE.SphereGeometry(1, 8, 10), mPoplar2);
     c2.scale.set(1.6, 6.5, 1.6); c2.position.set(0.4, 22, 0.2); g.add(c2);
     scene.add(g);
   }
-  function oak(x, z) {
+  function oak(x, z, s = 1) {
     // セブンスターの木のような、丸く大きく広がるカシワ
-    const g = new THREE.Group(); g.position.set(x, hJS(x, z), z);
+    const g = new THREE.Group(); g.position.set(x, hJS(x, z), z); g.scale.setScalar(s);
     const t = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 1.0, 5, 8), mTrunk);
     t.position.y = 2.5; g.add(t);
     [[0, 8.4, 5.6, mOak], [-2.6, 9.6, 4.2, mOak2], [2.4, 9.8, 4.4, mOak2], [0, 11.6, 3.6, mOak]]
       .forEach(([dx, dy, r, m]) => {
-        const s = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), m);
-        s.position.set(dx, dy, (Math.random() - 0.5) * 1.5); g.add(s);
+        const c = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), m);
+        c.position.set(dx, dy, (Math.random() - 0.5) * 1.5); g.add(c);
       });
     scene.add(g);
   }
-  poplar(53, 9);       // 右手の丘の上に1本。外観カメラ(半径11.5)が触れない距離
-  oak(-57, -22);       // スタート地点の左前方に1本
+  function spruce(x, z, s = 1) {
+    // クリスマスツリーの木のような、1本だけ立つトウヒ。段になった円錐
+    const g = new THREE.Group(); g.position.set(x, hJS(x, z), z); g.scale.setScalar(s);
+    const t = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.5, 2.5, 6), mTrunk);
+    t.position.y = 1.25; g.add(t);
+    [[3.6, 6.0, 2.0], [2.7, 5.5, 5.5], [1.6, 5.0, 9.0]].forEach(([r, h, y]) => {
+      const c = new THREE.Mesh(new THREE.ConeGeometry(r, h, 8), mSpruce);
+      c.position.y = y + h / 2; g.add(c);
+    });
+    scene.add(g);
+  }
+  // 置き場所は畑を囲む高み。どのカメラ(外観は半径11.5、広角は後方24)にも触れない距離
+  // (+z 向きに走るとき、画面の左が +x 側)
+  oak(-36, 86); oak(-30.5, 86.5, 0.55); oak(-25, 86);   // 親子の木。北の稜線に3本
+  poplar(78, -62);                                     // 南東の丘。南向きに走ると右手前方
+  poplar(84, 60, 0.9);                                 // 北東の丘。北向きに走ると左手
+  spruce(-34, -93);                                    // 南の丘。スタート地点の後ろ
+  oak(-98, -26, 1.1);                                  // 西の遠く
 
   // ── 籾殻と土埃。刈取部から湧いて後ろへ流れる
   const DUST = 140;
