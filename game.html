@@ -538,57 +538,84 @@
   scene.add(rig);
 
   // ── 丘に立つ木。美瑛の風景を決めているのは、畑と、この木立
-  const mLeaf = new THREE.MeshLambertMaterial({ color: 0x2c5c30 });
-  const mLeaf2 = new THREE.MeshLambertMaterial({ color: 0x38713a });
-  const mTrunk = new THREE.MeshLambertMaterial({ color: 0x4a3a2a });
+  const mLarch = new THREE.MeshLambertMaterial({ color: 0x4f7a3a });   // カラマツ(明るい黄緑)
+  const mLarchD = new THREE.MeshLambertMaterial({ color: 0x3f6530 });
+  const mPoplar = new THREE.MeshLambertMaterial({ color: 0x3f7d3c });  // ポプラ
+  const mOak = new THREE.MeshLambertMaterial({ color: 0x2e5a2c });     // カシワ(濃い)
+  const mOak2 = new THREE.MeshLambertMaterial({ color: 0x386c34 });
+  const mTrunk = new THREE.MeshLambertMaterial({ color: 0x5a4632 });
+  const mTrunkD = new THREE.MeshLambertMaterial({ color: 0x3e3024 });
 
-  // 防風林。畑の境に針葉樹が列になって並び、丘の輪郭を描く
+  // 防風林。美瑛の防風林はカラマツの列で、細く高い木が定規で引いたように
+  // 一直線に並ぶ。列方向にだけ僅かにずらし、列から外れる方向には散らさない
   const BELTS = [
     [[-72, -66], [-58, 66]],
     [[58, -68], [72, 60]],
     [[-70, 70], [64, 76]],
-    [[-74, -74], [50, -66]],
+    [[-74, -86], [50, -82]],   // 南側は広角・外観カメラの後ろに置く
   ];
-  const beltPts = [];
+  const larchPts = [];
   for (const [[x0, z0], [x1, z1]] of BELTS) {
     const len = Math.hypot(x1 - x0, z1 - z0);
-    const n = Math.floor(len / 3.6);
-    for (let i = 0; i <= n; i++) {
-      const t = i / n;
-      beltPts.push([
-        x0 + (x1 - x0) * t + (Math.random() - 0.5) * 1.4,
-        z0 + (z1 - z0) * t + (Math.random() - 0.5) * 1.4,
-      ]);
+    const ux = (x1 - x0) / len, uz = (z1 - z0) / len;   // 列方向
+    const n = Math.floor(len / 2.8);
+    for (let row = 0; row < 2; row++) {                 // 2列植え
+      const off = row ? 2.4 : 0;
+      for (let i = 0; i <= n; i++) {
+        const t = i / n, j = (Math.random() - 0.5) * 0.6;
+        larchPts.push([
+          x0 + (x1 - x0) * t + ux * j - uz * off,
+          z0 + (z1 - z0) * t + uz * j + ux * off,
+          0.85 + Math.random() * 0.3,                    // 高さのばらつき
+        ]);
+      }
     }
   }
-  const beltGeo = new THREE.ConeGeometry(1.5, 6.2, 6);
-  const belt = new THREE.InstancedMesh(beltGeo, mLeaf, beltPts.length);
+  // 樹冠(細長い円錐)と幹を別々のインスタンスで描く
+  const crownGeo = new THREE.ConeGeometry(1.25, 12.5, 7);
+  const trunkGeo = new THREE.CylinderGeometry(0.16, 0.3, 5.5, 6);
+  const crowns = new THREE.InstancedMesh(crownGeo, mLarch, larchPts.length);
+  const trunks = new THREE.InstancedMesh(trunkGeo, mTrunkD, larchPts.length);
   const tmpM = new THREE.Matrix4(), tmpQ = new THREE.Quaternion();
-  const tmpP = new THREE.Vector3(), tmpS = new THREE.Vector3();
-  beltPts.forEach(([x, z], i) => {
-    const s = 0.8 + Math.random() * 0.5;
-    tmpP.set(x, hJS(x, z) + 3.1 * s, z);
+  const tmpP = new THREE.Vector3(), tmpS = new THREE.Vector3(), yAxis = new THREE.Vector3(0, 1, 0);
+  larchPts.forEach(([x, z, s], i) => {
+    const y = hJS(x, z);
+    tmpQ.setFromAxisAngle(yAxis, Math.random() * 6.28);
     tmpS.set(s, s, s);
-    tmpQ.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.random() * 6.28);
-    belt.setMatrixAt(i, tmpM.compose(tmpP, tmpQ, tmpS));
+    tmpP.set(x, y + 2.75 * s, z);
+    trunks.setMatrixAt(i, tmpM.compose(tmpP, tmpQ, tmpS));
+    tmpP.set(x, y + (5.5 + 6.25) * s, z);               // 幹の上に樹冠
+    crowns.setMatrixAt(i, tmpM.compose(tmpP, tmpQ, tmpS));
   });
-  belt.instanceMatrix.needsUpdate = true;
-  scene.add(belt);
+  crowns.instanceMatrix.needsUpdate = trunks.instanceMatrix.needsUpdate = true;
+  scene.add(crowns, trunks);
 
-  // ぽつんと1本の木。美瑛の象徴
-  (function loneTree() {
-    const x = 49, z = 9, y = hJS(x, z);
-    const g = new THREE.Group();
-    g.position.set(x, y, z);
-    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.62, 4.2, 8), mTrunk);
-    trunk.position.y = 2.1; g.add(trunk);
-    [[0, 5.6, 4.6, 3.4], [0, 8.2, 3.6, 3.0], [0, 10.4, 2.4, 2.6]]
-      .forEach(([dx, dy, r, h], i) => {
-        const c = new THREE.Mesh(new THREE.ConeGeometry(r, h, 8), i % 2 ? mLeaf2 : mLeaf);
-        c.position.set(dx, dy, 0); g.add(c);
+  // ぽつんと立つ木。美瑛で名前のついた木は、ほぼポプラかカシワ
+  function poplar(x, z) {
+    // ケンとメリーの木のような、細く高いポプラ。ほうきを立てたような形
+    const g = new THREE.Group(); g.position.set(x, hJS(x, z), z);
+    const t = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.7, 7, 8), mTrunk);
+    t.position.y = 3.5; g.add(t);
+    const c = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 14), mPoplar);
+    c.scale.set(2.6, 11.5, 2.6); c.position.y = 16.5; g.add(c);
+    const c2 = new THREE.Mesh(new THREE.SphereGeometry(1, 8, 10), mLarchD);
+    c2.scale.set(1.6, 6.5, 1.6); c2.position.set(0.4, 22, 0.2); g.add(c2);
+    scene.add(g);
+  }
+  function oak(x, z) {
+    // セブンスターの木のような、丸く大きく広がるカシワ
+    const g = new THREE.Group(); g.position.set(x, hJS(x, z), z);
+    const t = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 1.0, 5, 8), mTrunk);
+    t.position.y = 2.5; g.add(t);
+    [[0, 8.4, 5.6, mOak], [-2.6, 9.6, 4.2, mOak2], [2.4, 9.8, 4.4, mOak2], [0, 11.6, 3.6, mOak]]
+      .forEach(([dx, dy, r, m]) => {
+        const s = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), m);
+        s.position.set(dx, dy, (Math.random() - 0.5) * 1.5); g.add(s);
       });
     scene.add(g);
-  })();
+  }
+  poplar(53, 9);       // 右手の丘の上に1本。外観カメラ(半径11.5)が触れない距離
+  oak(-57, -22);       // スタート地点の左前方に1本
 
   // ── 籾殻と土埃。刈取部から湧いて後ろへ流れる
   const DUST = 140;
