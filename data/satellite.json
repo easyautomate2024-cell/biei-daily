@@ -63,5 +63,24 @@
       "file": "year-2024.jpg",
       "for_date": "2026-08-29"
     }
-  ]
+  ],
+  "map": {
+    "date": "2026-08-29",
+    "scene_id": "S2C_54TXP_20260829_0_L2A",
+    "cloud": 18.8,
+    "visible": 88.3,
+    "file": "sat-map.jpg",
+    "bounds": {
+      "west": 142.3,
+      "south": 43.395,
+      "east": 142.74,
+      "north": 43.685
+    },
+    "checked": [
+      "S2A_54TXP_20260831_1_L2A",
+      "S2B_54TXP_20260903_0_L2A",
+      "S2B_54TXP_20260913_0_L2A",
+      "S2C_54TXP_20260908_0_L2A"
+    ]
+  }
 }

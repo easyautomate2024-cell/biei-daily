@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>衛星をマップで見る — 今日の美瑛</title>
+<meta name="description" content="美瑛町ぜんぶを、最新の衛星写真(Sentinel-2・10m解像度)で。地名を重ねて動かせるので、自分の家や畑、行った丘を探せます。晴れた日があれば自動で差し替わります。">
+<link rel="canonical" href="https://easyautomate2024-cell.github.io/biei-daily/sat-map.html">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta property="og:title" content="衛星をマップで見る — 今日の美瑛">
+<meta property="og:description" content="美瑛町ぜんぶを最新の衛星写真で。地名を重ねて動かせるので、自分の家や畑を探せます。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://easyautomate2024-cell.github.io/biei-daily/sat-map.html">
+<meta property="og:image" content="https://easyautomate2024-cell.github.io/biei-daily/og-image.jpg">
+<meta property="og:site_name" content="今日の美瑛">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2DT79T20E6"></script>
+<script>
+  // 管理人の端末(?notrack=1で登録)と開発プレビューを計測から除外する
+  (function () {
+    var msg = null;
+    try {
+      var q = new URLSearchParams(location.search);
+      if (q.has("notrack")) {
+        if (q.get("notrack") === "0") { localStorage.removeItem("biei-notrack"); msg = "この端末の計測を再開しました"; }
+        else { localStorage.setItem("biei-notrack", "1"); msg = "この端末をアクセス集計から除外しました"; }
+      }
+      if (localStorage.getItem("biei-notrack") === "1" ||
+          /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ||
+          location.protocol === "file:") {
+        window["ga-disable-G-2DT79T20E6"] = true;
+      }
+    } catch (e) { /* プライベートブラウズ等では既定のまま */ }
+    if (msg) {
+      var show = function () {
+        var d = document.createElement("div");
+        d.textContent = msg;
+        d.style.cssText = "position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1d1d1f;color:#fff;padding:10px 18px;border-radius:980px;font-size:13px;z-index:9999";
+        document.body.appendChild(d);
+        setTimeout(function () { d.remove(); }, 8000);
+      };
+      if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", show);
+      else show();
+    }
+  })();
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2DT79T20E6');
+</script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="style.css?v=13">
+<style>
+.satmap-wrap { max-width: 900px; margin: 0 auto; }
+.satmap-box { position: relative; }
+#satmap {
+  width: 100%; height: min(78vh, 760px);
+  border-radius: 16px; border: 1px solid var(--border2); background: #e9ecef;
+}
+/* レイヤーの切替。地図の左上に浮かせる */
+.layers { position: absolute; z-index: 800; top: 12px; left: 12px; display: flex; flex-direction: column; gap: 8px; }
+.layers button {
+  font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,0.94); color: #1d1d1f;
+  border: 1px solid rgba(0,0,0,0.12); border-radius: 980px; padding: 7px 14px 7px 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+.layers button .dot { width: 12px; height: 12px; border-radius: 50%; background: #c7c7cc; flex-shrink: 0; }
+.layers button.on .dot { background: #34c759; }
+.layers button .sub { font-weight: 400; color: #6e6e73; }
+.layers .slider {
+  background: rgba(255,255,255,0.94); border: 1px solid rgba(0,0,0,0.12); border-radius: 12px;
+  padding: 8px 12px; font-size: 12px; color: #6e6e73; box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+.layers .slider input { width: 130px; display: block; margin-top: 4px; }
+.satmap-note { font-size: 12.5px; color: var(--muted); margin-top: 10px; line-height: 1.7; }
+.satmap-missing { padding: 14px 16px; background: #fff7e6; border: 1px solid #f0d9a8; border-radius: 12px; font-size: 13.5px; }
+.leaflet-container { font-family: inherit; }
+/* 地名ラベル。衛星の上では白文字+濃い縁取り、地図だけのときは濃い文字 */
+.plabel {
+  display: inline-block; white-space: nowrap; transform: translate(-50%, -50%);
+  font-weight: 700; color: #fff; font-size: 13px; letter-spacing: 0.02em;
+  text-shadow: 0 0 3px rgba(0,0,0,.95), 0 0 6px rgba(0,0,0,.75), 0 1px 2px rgba(0,0,0,.9);
+}
+.plabel.minor { font-size: 11px; font-weight: 600; opacity: .92; }
+.plabel::before {
+  content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  background: #fff; box-shadow: 0 0 3px rgba(0,0,0,.9); margin-right: 5px; vertical-align: middle;
+}
+.satmap-box.no-sat .plabel { color: #1d1d1f; text-shadow: 0 0 3px #fff, 0 0 5px #fff, 0 1px 1px #fff; }
+.satmap-box.no-sat .plabel::before { background: #1d1d1f; box-shadow: 0 0 3px #fff; }
+.howto { font-size: 14.5px; color: var(--muted); line-height: 1.8; }
+.howto b { color: var(--text); }
+</style>
+</head>
+<body>
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a class="nav-logo" href="index.html">
+      <span class="logo-main">今日の美瑛</span>
+      <span class="logo-sub">BIEI DAILY</span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">今日のスコア</a>
+      <a href="satellite.html">衛星</a>
+      <a href="game.html">ゲーム</a>
+      <a href="about.html">About</a>
+      <a href="https://www.instagram.com/biei_explorer/" rel="noopener" class="nav-cta">Instagram</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero small">
+  <p class="hero-eyebrow">Satellite Map</p>
+  <h1>衛星をマップで見る</h1>
+  <p class="hero-sub">美瑛町ぜんぶを、いちばん新しい晴れた日の衛星写真で。動かして、拡大して、探してください。</p>
+</header>
+
+<main>
+  <div class="satmap-wrap">
+    <div class="satmap-box" id="satmap-box">
+      <div id="satmap"></div>
+      <div class="layers">
+        <button id="btn-sat" class="on" type="button"><span class="dot"></span>衛星写真 <span class="sub" id="sat-date"></span></button>
+        <button id="btn-label" class="on" type="button"><span class="dot"></span>地名</button>
+        <div class="slider">衛星写真の透け具合<input id="op" type="range" min="20" max="100" value="100" aria-label="衛星写真の透け具合"></div>
+      </div>
+    </div>
+    <p class="satmap-missing hidden" id="satmap-missing">全域の衛星写真をまだ用意できていません。晴れた日の撮影が入りしだい表示されます。</p>
+    <p class="satmap-note" id="satmap-note">読み込み中…</p>
+  </div>
+
+  <section class="card">
+    <p class="eyebrow">How To</p>
+    <h2>使い方</h2>
+    <p class="howto">
+      <b>衛星写真</b>と<b>地名</b>は、左上のボタンでそれぞれオン・オフできます。<br>
+      写真の下の地図(道路・川)を見たいときは<b>透け具合</b>のつまみを左へ。写真がすっと薄くなって、地理院地図が現れます。<br>
+      引いた状態では主な地名だけ、寄っていくと集落名、さらに寄ると市街の町名が出ます。
+    </p>
+    <p class="note">※ 衛星写真は Sentinel-2 の10m解像度なので、拡大しすぎると粗くなります。家の一軒一軒は「点」として見える程度です。地名の位置は国土地理院の住所検索による代表点で、集落の中心とは少しずれることがあります。</p>
+  </section>
+
+  <section class="card">
+    <p class="eyebrow">About This Map</p>
+    <h2>どう更新されているか</h2>
+    <p class="howto">
+      衛星は約5日おきに美瑛の上空を通ります。毎朝自動で通過を確認し、<b>町全体の85%以上で地表が見えていた</b>いちばん新しい日を採用します。丘だけを切り出した<a href="satellite.html">「衛星が見た美瑛」</a>より範囲が広いぶん、山側に雲が残る日が多く、採用日が丘の画像と違うことがあります。
+    </p>
+    <p class="note">データ: <a href="https://registry.opendata.aws/sentinel-2-l2a-cogs/" rel="noopener">Sentinel-2 L2A (ESA / AWS Open Data)</a> ／ 地図: <a href="https://maps.gsi.go.jp/development/ichiran.html" rel="noopener">地理院タイル</a>(国土地理院) ／ 地図ライブラリ: <a href="https://leafletjs.com/" rel="noopener">Leaflet</a></p>
+  </section>
+</main>
+
+<footer>
+  <p><a href="satellite.html">← 衛星が見た美瑛</a> ／ <a href="index.html">今日の美瑛 トップ</a></p>
+  <p>このサイトは個人が運営する非公式の情報サイトです。</p>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(async () => {
+  // 地名。3 = 引いていても出す / 2 = 集落名(ズーム12以上) / 1 = 市街の町名(ズーム14以上)
+  // 位置は国土地理院の住所検索の代表点
+  const PLACES = [
+    ["美瑛市街",142.4635,43.5915,3],["美馬牛",142.439209,43.561268,3],["置杵牛",142.583145,43.558365,3],
+    ["俵真布",142.627258,43.589962,3],["白金",142.643753,43.472809,3],["青い池",142.621,43.489,3],
+    ["五稜",142.372208,43.602283,3],["朗根内",142.606674,43.615433,3],
+    ["瑠辺蘂",142.41095,43.561874,2],["美沢",142.543076,43.545326,2],   // 引いた時は美馬牛と重なるので寄ってから
+    ["福富",142.470062,43.556389,2],["水沢",142.488281,43.555347,2],["旭",142.420151,43.64156,2],
+    ["大村",142.445892,43.598042,2],["藤野",142.522125,43.569622,2],["明治",142.511703,43.60405,2],
+    ["美田",142.413391,43.607582,2],["横牛",142.568024,43.616283,2],["北瑛",142.44072,43.624161,2],
+    ["三愛",142.460678,43.575233,2],["上宇莫別",142.61496,43.569874,2],["下宇莫別",142.483032,43.61607,2],
+    ["美園",142.386963,43.571606,2],["丸山",142.474152,43.584656,2],["花園",142.455292,43.587826,2],
+    ["本町",142.463547,43.591469,1],["中町",142.466034,43.593197,1],["栄町",142.461151,43.589806,1],
+    ["南町",142.465729,43.585812,1],["西町",142.458298,43.587826,1],["北町",142.463333,43.593559,1],
+    ["東町",142.474808,43.592117,1],["大町",142.458542,43.590538,1],["扇町",142.466812,43.597034,1],
+  ];
+
+  let meta = null;
+  try {
+    const r = await fetch("data/satellite.json", { cache: "no-store" });
+    meta = (await r.json()).map || null;
+  } catch (e) { meta = null; }
+
+  const box = document.getElementById("satmap-box");
+  const note = document.getElementById("satmap-note");
+  const B = (meta && meta.bounds) || { west: 142.30, south: 43.395, east: 142.74, north: 43.685 };
+  const bounds = [[B.south, B.west], [B.north, B.east]];
+
+  const map = L.map("satmap", {
+    maxBounds: [[B.south - 0.12, B.west - 0.18], [B.north + 0.12, B.east + 0.18]],
+    minZoom: 10, maxZoom: 16, zoomControl: true,
+  });
+  map.zoomControl.setPosition("bottomright");
+  map.fitBounds(bounds);
+
+  // 下地: 地理院の淡色地図。衛星をOFFにした時や透かした時に見える
+  L.tileLayer("https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png", {
+    attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html">地理院タイル</a>', maxZoom: 18,
+  }).addTo(map);
+
+  // 衛星写真(Web Mercator に投影済みの1枚絵)
+  const bs = document.getElementById("btn-sat"), bl = document.getElementById("btn-label"), op = document.getElementById("op");
+  let sat = null;
+  if (meta && meta.file) {
+    sat = L.imageOverlay("photos/sat/" + meta.file + "?d=" + meta.date, bounds, { opacity: 1, interactive: false }).addTo(map);
+    document.getElementById("sat-date").textContent = meta.date.replace(/-/g, "/") + " 撮影";
+    note.textContent = `衛星写真は ${meta.date.replace(/-/g, "/")} 撮影(町全域で地表が見えた割合 ${meta.visible}%)。毎朝自動で通過を確認し、新しい晴れた日があれば差し替わります。`;
+  } else {
+    bs.classList.remove("on"); bs.disabled = true;
+    box.classList.add("no-sat");
+    document.getElementById("satmap-missing").classList.remove("hidden");
+    note.textContent = "";
+  }
+
+  // 地名レイヤー(自前)。ズームに応じて出す数を変える
+  const labels = L.layerGroup().addTo(map);
+  const markers = PLACES.map(([name, lon, lat, tier]) => ({
+    tier,
+    m: L.marker([lat, lon], {
+      interactive: false, keyboard: false,
+      icon: L.divIcon({ className: "", html: `<span class="plabel ${tier === 1 ? "minor" : ""}">${name}</span>`, iconSize: null, iconAnchor: [0, 0] }),
+    }),
+  }));
+  const refreshLabels = () => {
+    const z = map.getZoom();
+    const minTier = z >= 14 ? 1 : z >= 12 ? 2 : 3;
+    labels.clearLayers();
+    markers.forEach(({ tier, m }) => {
+      if (tier < minTier) return;
+      if (tier === 3 && m.getLatLng().lng === 142.4635 && z >= 14) return;   // 町名を出すときは「美瑛市街」を消す
+      labels.addLayer(m);
+    });
+  };
+  map.on("zoomend", refreshLabels);
+  refreshLabels();
+
+  bs.addEventListener("click", () => {
+    if (!sat) return;
+    const on = !map.hasLayer(sat);
+    on ? sat.addTo(map) : map.removeLayer(sat);
+    bs.classList.toggle("on", on);
+    box.classList.toggle("no-sat", !on);
+  });
+  bl.addEventListener("click", () => {
+    const on = !map.hasLayer(labels);
+    on ? labels.addTo(map) : map.removeLayer(labels);
+    bl.classList.toggle("on", on);
+  });
+  op.addEventListener("input", () => { if (sat) sat.setOpacity(op.value / 100); });
+
+  // 計測: レイヤー操作と拡大が使われているか
+  if (typeof gtag === "function") {
+    bs.addEventListener("click", () => gtag("event", "satmap_toggle", { layer: "sat" }));
+    bl.addEventListener("click", () => gtag("event", "satmap_toggle", { layer: "label" }));
+  }
+})();
+</script>
+</body>
+</html>

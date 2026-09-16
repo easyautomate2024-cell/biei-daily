@@ -20,6 +20,8 @@ from datetime import datetime, timedelta, timezone
 
 import numpy as np
 import rasterio
+from rasterio.enums import Resampling
+from rasterio.vrt import WarpedVRT
 from rasterio.warp import transform_bounds
 from rasterio.windows import from_bounds
 from PIL import Image
@@ -47,6 +49,15 @@ CROPS = {
 
 THUMB_WIDTH = 420   # 通過記録のサムネイル幅
 BRIGHT_LIMIT = 200  # これ以上明るいと「真っ白＝雲で地表が見えない」とみなす
+
+# 「衛星をマップで見る」用: 美瑛町全域を1枚、地図タイルと同じ Web Mercator で書き出す。
+# 丘の画像とは別枠で判定する(町全体で見ると山側に雲が残る日が多いため、基準はゆるめ)
+MAP_BBOX = (142.30, 43.395, 142.74, 43.685)
+MAP_FILE = "sat-map.jpg"
+MAP_WIDTH = 2400
+MAP_MIN_VISIBLE = 85   # 町全域で地表がこれ以上見えていれば採用
+MAP_MAX_BLACK = 2      # 撮影範囲の端で欠けている(真っ黒)割合の上限
+MAP_CHECKED_KEEP = 20  # 不採用と判定したシーンの記録数(再ダウンロードを避ける)
 
 # 年次比較「この丘、去年は何色?」
 YEARS_BACK = (1, 2)      # 何年前と比べるか(去年・おととし)
@@ -277,6 +288,62 @@ def adopt_scene(clear, meta):
     return True
 
 
+def read_map(href):
+    """町全域を Web Mercator に投影し直して RGB 配列で返す(Leaflet の ImageOverlay にそのまま重なる)"""
+    with rasterio.open(href) as src, \
+            WarpedVRT(src, crs="EPSG:3857", resampling=Resampling.bilinear) as vrt:
+        b = transform_bounds("EPSG:4326", "EPSG:3857", *MAP_BBOX)
+        win = from_bounds(*b, vrt.transform)
+        scale = MAP_WIDTH / win.width
+        data = vrt.read(window=win, out_shape=(3, round(win.height * scale), MAP_WIDTH))
+    return np.transpose(data, (1, 2, 0))
+
+
+def build_map(items, meta):
+    """マップ用の全域画像。掲載中より新しい通過を順に見て、町全体が見えた最新の日を採用する"""
+    cur = meta.get("map") or {}
+    checked = set(cur.get("checked", []))
+    adopted = None
+    for f in items:
+        sid = f["id"]
+        if sid == cur.get("scene_id"):
+            break                       # 掲載中のシーンまで来たら、それより古いものは見ない
+        if sid in checked:
+            continue
+        date = f["properties"]["datetime"][:10]
+        try:
+            img = read_map(f["assets"]["visual"]["href"])
+        except Exception as e:
+            print(f"  マップ {date}: 読み出し失敗 ({e})")
+            continue
+        if img.size == 0:
+            checked.add(sid)
+            continue
+        black = round(float((img.max(axis=2) < 8).mean()) * 100, 1)
+        vis = visible_pct(img)
+        if black > MAP_MAX_BLACK or vis < MAP_MIN_VISIBLE:
+            print(f"  マップ {date}: 地表可視{vis}% 欠け{black}% -> 見送り")
+            checked.add(sid)
+            continue
+        size = save_jpg(img, os.path.join(OUT_DIR, MAP_FILE), MAP_WIDTH, quality=80)
+        adopted = {
+            "date": date,
+            "scene_id": sid,
+            "cloud": round(f["properties"].get("eo:cloud_cover", -1), 1),
+            "visible": vis,
+            "file": MAP_FILE,
+            "bounds": {"west": MAP_BBOX[0], "south": MAP_BBOX[1], "east": MAP_BBOX[2], "north": MAP_BBOX[3]},
+        }
+        print(f"  マップ {date}: 地表可視{vis}% -> {MAP_FILE} {size}")
+        break
+    new = adopted or cur
+    if new:
+        new["checked"] = sorted(checked)[-MAP_CHECKED_KEEP:]
+        meta["map"] = new
+    if not adopted:
+        print("  マップ: 新しい採用なし" + (f"(掲載中 {cur.get('date')})" if cur else ""))
+
+
 def cleanup_thumbs(passes):
     keep = {p["thumb"] for p in passes}
     for name in os.listdir(OUT_DIR):
@@ -321,6 +388,12 @@ def main():
 
     print("年次比較の画像を確認:")
     build_year_compare(meta)
+
+    print("マップ用の全域画像を確認:")
+    try:
+        build_map(items, meta)
+    except Exception as e:      # マップだけ失敗しても丘の更新は止めない
+        print(f"  マップ: 失敗 ({e})")
 
     for p in passes:
         p["used"] = (p["scene_id"] == meta.get("scene_id"))
