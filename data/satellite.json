@@ -1,9 +1,17 @@
 {
-  "date": "2026-08-29",
-  "cloud_cover": 18.8,
-  "scene_id": "S2C_54TXP_20260829_0_L2A",
-  "updated_at": "2026-08-30T05:32:21Z",
+  "date": "2026-09-18",
+  "cloud_cover": 24.2,
+  "scene_id": "S2C_54TXP_20260918_0_L2A",
+  "updated_at": "2026-09-19T04:45:04Z",
   "passes": [
+    {
+      "date": "2026-09-18",
+      "scene_id": "S2C_54TXP_20260918_0_L2A",
+      "cloud": 24.2,
+      "visible": 99.7,
+      "thumb": "pass-2026-09-18.jpg",
+      "used": true
+    },
     {
       "date": "2026-09-13",
       "scene_id": "S2B_54TXP_20260913_0_L2A",
@@ -42,33 +50,33 @@
       "cloud": 18.8,
       "visible": 99.7,
       "thumb": "pass-2026-08-29.jpg",
-      "used": true
+      "used": false
     }
   ],
-  "checked_at": "2026-09-18T04:53:03Z",
+  "checked_at": "2026-09-19T04:45:13Z",
   "years": [
     {
       "year": 2025,
-      "date": "2025-09-03",
-      "cloud": 54.6,
-      "visible": 60.7,
+      "date": "2025-09-23",
+      "cloud": 42.7,
+      "visible": 90.8,
       "file": "year-2025.jpg",
-      "for_date": "2026-08-29"
+      "for_date": "2026-09-18"
     },
     {
       "year": 2024,
-      "date": "2024-08-29",
-      "cloud": 15.6,
-      "visible": 99.7,
+      "date": "2024-09-18",
+      "cloud": 16.7,
+      "visible": 97.3,
       "file": "year-2024.jpg",
-      "for_date": "2026-08-29"
+      "for_date": "2026-09-18"
     }
   ],
   "map": {
-    "date": "2026-08-29",
-    "scene_id": "S2C_54TXP_20260829_0_L2A",
-    "cloud": 18.8,
-    "visible": 88.3,
+    "date": "2026-09-18",
+    "scene_id": "S2C_54TXP_20260918_0_L2A",
+    "cloud": 24.2,
+    "visible": 98.0,
     "file": "sat-map.jpg",
     "bounds": {
       "west": 142.3,
