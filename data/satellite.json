@@ -43,17 +43,9 @@
       "visible": 86.9,
       "thumb": "pass-2026-08-31.jpg",
       "used": false
-    },
-    {
-      "date": "2026-08-29",
-      "scene_id": "S2C_54TXP_20260829_0_L2A",
-      "cloud": 18.8,
-      "visible": 99.7,
-      "thumb": "pass-2026-08-29.jpg",
-      "used": false
     }
   ],
-  "checked_at": "2026-09-19T04:45:13Z",
+  "checked_at": "2026-09-20T05:01:13Z",
   "years": [
     {
       "year": 2025,
