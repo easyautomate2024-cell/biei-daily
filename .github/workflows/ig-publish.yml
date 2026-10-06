@@ -22,6 +22,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 別アカウントのトークンが入っていたら、ここで止めて投稿しない
+      - name: トークンのアカウントを確認
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+        run: |
+          python - <<'PY'
+          import json, os, urllib.error, urllib.request
+          url = ("https://graph.instagram.com/v23.0/me?fields=username"
+                 "&access_token=" + os.environ["IG_ACCESS_TOKEN"])
+          try:
+              with urllib.request.urlopen(url, timeout=30) as r:
+                  name = json.loads(r.read()).get("username")
+          except urllib.error.HTTPError as e:
+              print("エラー:", json.loads(e.read()).get("error", {}).get("message"))
+              raise SystemExit(1)
+          print(f"アカウント: @{name}")
+          if name != "biei_explorer":
+              print("想定(@biei_explorer)と違うアカウントのため、投稿を中止します")
+              raise SystemExit(1)
+          PY
+
       - name: Instagramへ投稿
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -40,11 +61,12 @@ jobs:
           RES=$(curl -s "https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${IG_ACCESS_TOKEN}")
           NEW=$(echo "$RES" | python -c "import json,sys; d=json.load(sys.stdin); print(d.get('access_token',''))")
           DAYS=$(echo "$RES" | python -c "import json,sys; d=json.load(sys.stdin); print(d.get('expires_in',0)//86400)")
-          if [ -z "$NEW" ]; then echo "延長に失敗: $RES"; exit 0; fi
-          echo "トークンを延長しました(残り${DAYS}日)"
-          if [ -n "$GH_TOKEN" ]; then
+          if [ -z "$NEW" ]; then echo "延長に失敗(発行から24時間以内は延長できない): $RES"; exit 0; fi
+          if [ "$NEW" = "$IG_ACCESS_TOKEN" ]; then
+            echo "トークンを延長しました(残り${DAYS}日・文字列は同じなので保存は不要)"
+          elif [ -n "$GH_TOKEN" ]; then
             echo "$NEW" | gh secret set IG_ACCESS_TOKEN --repo "$GITHUB_REPOSITORY"
-            echo "新しいトークンを保存しました"
+            echo "新しいトークンを保存しました(残り${DAYS}日)"
           else
-            echo "GH_PAT が未設定のため保存はスキップ(60日以内に再投稿すれば実質問題なし)"
+            echo "::warning::延長で新しいトークンが発行されましたが、GH_PAT 未設定のため保存できていません。今のトークンの期限前に再設定が必要です"
           fi
