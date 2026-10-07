@@ -456,8 +456,15 @@ async function loadBakushu() {
     const year = Number(today.slice(0, 4));
     const mmdd = today.slice(5);
 
+    // 麦の季節でない間は、カードをページの下のほう(きろくの手前)へ下げる
+    const moveDown = () => {
+      const card = document.querySelector(".bakushu-card"), gallery = document.querySelector(".gallery");
+      if (card && gallery) gallery.before(card);
+    };
+
     // 収穫後(8月): メーターを閉じて季節の締めくくりを表示(積算の取得も不要)
     if (mmdd >= "08-01" && mmdd <= "08-31") {
+      moveDown();
       status.textContent = "今季の麦秋はおわりました。丘は収穫のあとの色へ。";
       pred.textContent = "金色の季節は7月なかば。来年もこのメーターで追いかけます。";
       stage.textContent = "次のシーズンは 4/1 から積算を再開します。";
@@ -467,6 +474,7 @@ async function loadBakushu() {
 
     // シーズンオフ(9/1〜3/31): 次の積算開始までのカウントダウン
     if (mmdd < GDD_START_MMDD || mmdd > "08-31") {
+      moveDown();
       const nextYear = mmdd > "08-31" ? year + 1 : year;
       const days = Math.ceil(
         (new Date(`${nextYear}-${GDD_START_MMDD}T00:00:00`) - new Date(`${today}T00:00:00`)) / 86400000
@@ -668,15 +676,33 @@ async function loadSatTeaser() {
     const md = `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}`;
     const missed = (meta.passes || []).filter((p) => !p.used && p.date > d).length;
 
+    // トップの「宇宙から」の小さな枠に入るので、短く
     const label = document.getElementById("sat-teaser-date");
     if (missed > 0) {
       const age = Math.round((Date.parse(tokyoDateStr() + "T00:00:00Z") - Date.parse(d + "T00:00:00Z")) / 86400000);
-      label.textContent = `☁️ 雲で晴れ待ち${age}日（${md}の撮影を表示中）`;
+      label.textContent = `☁️ 晴れ待ち${age}日`;
     } else {
-      label.textContent = `撮影日 ${md}(最新の晴れた日)`;
+      label.textContent = `撮影 ${md}`;
     }
     document.getElementById("sat-teaser-img").src = `photos/sat/sat-hills.jpg?d=${d}`;
   } catch (e) { /* 失敗時は既定文言のまま */ }
+}
+
+// ── 「美瑛の地区を、宇宙から」の最新回をトップに出す ──────────
+async function loadDistrictFeature() {
+  try {
+    const res = await fetch("data/districts.json", { cache: "no-store" });
+    if (!res.ok) return;
+    const eps = (await res.json()).episodes || [];
+    if (!eps.length) return;
+    const e = eps.reduce((a, b) => (b.no > a.no ? b : a));
+    document.getElementById("space-feature").href = `districts.html#${e.id}`;
+    document.getElementById("space-feature-img").src = e.seasons[e.seasons.length - 1].img;
+    document.getElementById("space-feature-img").alt = `${e.name}の衛星写真。金色の線が地区の範囲`;
+    document.getElementById("space-feature-kicker").textContent = `美瑛の地区を、宇宙から No.${e.no}`;
+    document.getElementById("space-feature-title").textContent = `${e.name}（${e.kana}）`;
+    document.getElementById("space-feature-desc").textContent = e.lead;
+  } catch (e) { /* 失敗時はシリーズの案内のまま */ }
 }
 
 async function main() {
@@ -684,6 +710,7 @@ async function main() {
   loadVolcano();
   loadBakushu();
   loadSatTeaser();
+  loadDistrictFeature();
   const today = tokyoDateStr();
   const tomorrow = tokyoDateStr(1);
   document.getElementById("today-date").textContent = `（${today}）`;

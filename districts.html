@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>美瑛の地区を、宇宙から — 今日の美瑛</title>
+<meta name="description" content="美瑛町の農村部は34の地区(字)に分かれています。ひとつずつ、冬・春・夏・秋の衛星写真と名前の由来で紹介していくシリーズです。">
+<link rel="canonical" href="https://easyautomate2024-cell.github.io/biei-daily/districts.html">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta property="og:title" content="美瑛の地区を、宇宙から — 今日の美瑛">
+<meta property="og:description" content="34の地区を、四季の衛星写真でひとつずつ紹介します。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://easyautomate2024-cell.github.io/biei-daily/districts.html">
+<meta property="og:image" content="https://easyautomate2024-cell.github.io/biei-daily/photos/districts/og.jpg">
+<meta property="og:site_name" content="今日の美瑛">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2DT79T20E6"></script>
+<script>
+  // 管理人の端末(?notrack=1で登録)と開発プレビューを計測から除外する
+  (function () {
+    var msg = null;
+    try {
+      var q = new URLSearchParams(location.search);
+      if (q.has("notrack")) {
+        if (q.get("notrack") === "0") { localStorage.removeItem("biei-notrack"); msg = "この端末の計測を再開しました"; }
+        else { localStorage.setItem("biei-notrack", "1"); msg = "この端末をアクセス集計から除外しました"; }
+      }
+      if (localStorage.getItem("biei-notrack") === "1" ||
+          /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ||
+          location.protocol === "file:") {
+        window["ga-disable-G-2DT79T20E6"] = true;
+      }
+    } catch (e) { /* プライベートブラウズ等では既定のまま */ }
+    if (msg) {
+      var show = function () {
+        var d = document.createElement("div");
+        d.textContent = msg;
+        d.style.cssText = "position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1d1d1f;color:#fff;padding:10px 18px;border-radius:980px;font-size:13px;z-index:9999";
+        document.body.appendChild(d);
+        setTimeout(function () { d.remove(); }, 8000);
+      };
+      if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", show);
+      else show();
+    }
+  })();
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2DT79T20E6');
+</script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="style.css?v=14">
+<style>
+#dmap {
+  width: calc(100% + 64px); margin: -30px -32px 18px;
+  height: min(64vh, 620px); border-radius: 19px 19px 0 0; background: #e9ecef;
+}
+.leaflet-container { font-family: inherit; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.legend i { display: inline-block; width: 18px; height: 0; border-top: 3px solid; border-radius: 2px; }
+.legend i.done { border-color: #e2b23a; }
+.legend i.soon { border-color: #ffffff; outline: 1px solid rgba(0,0,0,.35); }
+.legend i.town { height: 10px; border: none; background: rgba(120,120,128,.55); }
+/* 地図の地区名。衛星の上なので白文字+濃い縁取り */
+.dlabel {
+  display: inline-block; white-space: nowrap; transform: translate(-50%, -50%);
+  font-weight: 700; color: #fff; font-size: 12px; letter-spacing: .02em;
+  text-shadow: 0 0 3px rgba(0,0,0,.95), 0 0 6px rgba(0,0,0,.75);
+}
+.dlabel.done { font-size: 14px; color: #ffe08a; }
+.dcard h2 .kana { font-size: 16px; font-weight: 600; color: var(--muted); letter-spacing: 0; margin-left: 6px; }
+.dlead { font-size: 16px !important; color: var(--text) !important; font-weight: 600; margin-bottom: 16px; }
+.dseasons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 6px 0 18px; }
+.dseasons figure { margin: 0; }
+.dseasons img { width: 100%; height: auto; aspect-ratio: 9 / 10; object-fit: cover; border-radius: 12px; display: block; background: #e8e8ed; }
+.dseasons figcaption { font-size: 13px; color: var(--muted); margin-top: 6px; }
+.dseasons figcaption b { color: var(--text); margin-right: 6px; }
+.dorigin { font-size: 15.5px !important; color: var(--text) !important; font-weight: 600; margin-bottom: 8px; }
+.reel-btn {
+  display: inline-block; margin-top: 16px; background: var(--accent); color: #fff; text-decoration: none;
+  font-size: 14px; font-weight: 700; padding: 10px 20px; border-radius: 980px;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.chips span { font-size: 13.5px; padding: 6px 12px; border-radius: 980px; background: #f0f0f3; color: #3a3a3c; }
+.howto { font-size: 14.5px; color: var(--muted); line-height: 1.8; }
+@media (max-width: 600px) {
+  #dmap { width: calc(100% + 40px); margin: -24px -20px 16px; height: min(60vh, 520px); }
+  .dseasons { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a class="nav-logo" href="index.html">
+      <span class="logo-main">今日の美瑛</span>
+      <span class="logo-sub">BIEI DAILY</span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">今日</a>
+      <a href="satellite.html" aria-current="page">宇宙から</a>
+      <a href="map.html">直売所</a>
+      <a href="game.html">ゲーム</a>
+      <a href="about.html">About</a>
+      <a href="https://www.instagram.com/biei_explorer/" rel="noopener" class="nav-cta">Instagram</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero small">
+  <p class="hero-eyebrow">Districts from Space</p>
+  <h1>美瑛の地区を、宇宙から</h1>
+  <p class="hero-sub">美瑛町の農村部は、34の地区(字)に分かれています。<br>ひとつずつ、冬・春・夏・秋の衛星写真で紹介していきます。</p>
+</header>
+
+<main>
+  <section class="card">
+    <div id="dmap" role="img" aria-label="美瑛町の地区の境界を衛星写真の上に描いた地図"></div>
+    <div class="legend">
+      <span><i class="done"></i>紹介した地区</span>
+      <span><i class="soon"></i>これから紹介する地区</span>
+      <span><i class="town"></i>市街地</span>
+    </div>
+    <p class="note">地区を押すと、その地区の紹介が開きます。</p>
+  </section>
+
+  <div id="episodes"></div>
+
+  <section class="card">
+    <p class="eyebrow">Coming Up</p>
+    <h2>これから紹介する地区</h2>
+    <div class="chips" id="coming"></div>
+  </section>
+
+  <section class="card">
+    <p class="eyebrow">About This Series</p>
+    <h2>このシリーズについて</h2>
+    <p class="howto">
+      地区の区切りは、国勢調査(2020年)の<b>字(あざ)</b>です。美馬牛駅のまわりの市街(美馬牛南・美馬牛北)は、美馬牛に含めています。
+      美瑛の市街地の町は、このシリーズでは扱いません。<br>
+      地名の由来は、資料によって説明が少しずつ違うことがあります。地区ごとに、もとにした資料を記しています。
+      インスタ <a href="https://www.instagram.com/biei_explorer/" rel="noopener">@biei_explorer</a> では、同じ地区をリール動画でも紹介しています。
+    </p>
+    <p class="note">衛星写真: Contains modified Copernicus Sentinel data 2026(<a href="https://registry.opendata.aws/sentinel-2-l2a-cogs/" rel="noopener">Sentinel-2 L2A</a>・10m解像度) ／ 地区の境界: 「令和2年国勢調査 町丁・字等別境界データ」(総務省統計局)を加工して作成 ／ 地図: <a href="https://maps.gsi.go.jp/development/ichiran.html" rel="noopener">地理院タイル</a>(国土地理院) ／ 地図ライブラリ: <a href="https://leafletjs.com/" rel="noopener">Leaflet</a></p>
+  </section>
+</main>
+
+<footer>
+  <p><a href="satellite.html">← 衛星が見た美瑛</a> ／ <a href="sat-map.html">衛星をマップで見る</a> ／ <a href="index.html">今日の美瑛 トップ</a></p>
+  <p>このサイトは個人が運営する非公式の情報サイトです。</p>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(async () => {
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const fmt = (d) => `${d.slice(0, 4)}.${Number(d.slice(5, 7))}.${Number(d.slice(8, 10))}`;
+  const [shapes, data, sat] = await Promise.all([
+    fetch("data/districts.geojson").then((r) => r.json()),
+    fetch("data/districts.json", { cache: "no-store" }).then((r) => r.json()),
+    fetch("data/satellite.json", { cache: "no-store" }).then((r) => r.json()).then((j) => j.map).catch(() => null),
+  ]);
+  const episodes = [...data.episodes].sort((a, b) => b.no - a.no);
+  const done = new Map(episodes.map((e) => [e.id, e]));
+
+  // ---- 紹介した地区のカード ----
+  document.getElementById("episodes").innerHTML = episodes.map((e) => `
+    <article class="card dcard" id="${esc(e.id)}">
+      <p class="eyebrow">No.${e.no}</p>
+      <h2>${esc(e.name)}<span class="kana">${esc(e.kana)}</span></h2>
+      <p class="dlead">${esc(e.lead)}</p>
+      <div class="dseasons">
+        ${e.seasons.map((s) => `
+          <figure>
+            <img src="${esc(s.img)}" width="720" height="800" loading="lazy" alt="${esc(e.name)}の衛星写真(${esc(s.label)}・${fmt(s.date)})。金色の線が地区の範囲">
+            <figcaption><b>${esc(s.label)}</b>${fmt(s.date)}</figcaption>
+          </figure>`).join("")}
+      </div>
+      <p class="dorigin">${esc(e.origin)}</p>
+      <p>${esc(e.body)}</p>
+      ${e.reel ? `<a class="reel-btn" href="${esc(e.reel)}" rel="noopener">インスタのリールで見る</a>` : ""}
+      <p class="note">出典: ${e.sources.map((s) => `<a href="${esc(s.url)}" rel="noopener">${esc(s.title)}</a>`).join(" ／ ")}</p>
+    </article>`).join("");
+
+  // ---- これから紹介する地区 ----
+  const coming = shapes.features
+    .filter((f) => f.properties.kind === "aza" && !done.has(f.properties.id))
+    .sort((a, b) => b.properties.label[1] - a.properties.label[1]);   // 北から順に
+  document.getElementById("coming").innerHTML = coming.map((f) => `<span>${esc(f.properties.name)}</span>`).join("");
+
+  // ---- 地図 ----
+  const B = (sat && sat.bounds) || { west: 142.30, south: 43.395, east: 142.74, north: 43.685 };
+  const map = L.map("dmap", { minZoom: 10, maxZoom: 15, zoomControl: true, scrollWheelZoom: false });
+  map.zoomControl.setPosition("bottomright");
+  L.tileLayer("https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png", {
+    attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html">地理院タイル</a>', maxZoom: 18,
+  }).addTo(map);
+  if (sat && sat.file) {
+    L.imageOverlay(`photos/sat/${sat.file}?d=${sat.date}`, [[B.south, B.west], [B.north, B.east]],
+                   { opacity: 0.9, interactive: false }).addTo(map);
+  }
+  const style = (f) => f.properties.kind === "town"
+    ? { stroke: false, fillColor: "#78787f", fillOpacity: 0.45 }
+    : done.has(f.properties.id)
+      ? { color: "#e2b23a", weight: 3.5, fillColor: "#e2b23a", fillOpacity: 0.22 }
+      : { color: "#ffffff", weight: 1.2, opacity: 0.85, fillOpacity: 0 };
+  // 白い線が淡色地図の上(衛星写真の外)でも見えるよう、下に薄い影の線を敷く
+  L.geoJSON(shapes, {
+    filter: (f) => f.properties.kind === "aza" && !done.has(f.properties.id),
+    style: { color: "#1d1d1f", weight: 3.2, opacity: 0.35, fillOpacity: 0 },
+    interactive: false,
+  }).addTo(map);
+  const layer = L.geoJSON(shapes, {
+    style,
+    onEachFeature: (f, lyr) => {
+      const p = f.properties;
+      if (p.kind === "town") { lyr.bindTooltip("市街地(このシリーズでは扱いません)"); return; }
+      lyr.on("click", (ev) => {
+        if (typeof gtag === "function") gtag("event", "district_click", { district: p.name, done: done.has(p.id) });
+        if (done.has(p.id)) {
+          document.getElementById(p.id).scrollIntoView({ behavior: "smooth", block: "start" });
+        } else {
+          L.popup().setLatLng(ev.latlng).setContent(`<b>${esc(p.name)}</b><br>紹介は準備中です`).openOn(map);
+        }
+      });
+    },
+  }).addTo(map);
+  map.fitBounds(layer.getBounds(), { padding: [8, 8] });
+
+  // 地区名: 紹介した地区はいつも、ほかは寄ったときだけ
+  const labels = L.layerGroup().addTo(map);
+  const refresh = () => {
+    labels.clearLayers();
+    const z = map.getZoom();
+    shapes.features.forEach((f) => {
+      const p = f.properties, isDone = done.has(p.id);
+      if (p.kind === "town" || (!isDone && z < 12)) return;
+      L.marker([p.label[1], p.label[0]], {
+        interactive: false, keyboard: false,
+        icon: L.divIcon({ className: "", html: `<span class="dlabel ${isDone ? "done" : ""}">${esc(p.name)}</span>`, iconSize: null, iconAnchor: [0, 0] }),
+      }).addTo(labels);
+    });
+  };
+  map.on("zoomend", refresh);
+  refresh();
+
+  if (location.hash && document.querySelector(location.hash)) {
+    document.querySelector(location.hash).scrollIntoView({ block: "start" });
+  }
+})();
+</script>
+</body>
+</html>

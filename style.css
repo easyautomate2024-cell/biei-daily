@@ -50,6 +50,8 @@ nav.site-nav {
   transition: filter 0.2s;
 }
 .nav-cta:hover { filter: brightness(1.1); }
+/* 今いるページ(またはその仲間)のメニュー */
+.nav-links a[aria-current="page"] { color: var(--text); font-weight: 700; }
 
 /* ===== HERO ===== */
 .hero {
@@ -286,6 +288,34 @@ a.sat-teaser {
 }
 .sat-teaser-desc { font-size: 14px; margin-bottom: 8px; }
 .sat-teaser-meta { font-size: 13px !important; color: var(--accent) !important; font-weight: 600; }
+
+/* ===== 宇宙から(トップの枠): 最新の地区を大きく、ほかの衛星ページを小さく ===== */
+.space-feature {
+  display: block; position: relative; overflow: hidden;
+  border-radius: 16px; margin: 6px 0 14px;
+  text-decoration: none; color: #fff;
+}
+.space-feature img { width: 100%; height: 280px; object-fit: cover; display: block; transition: transform 0.4s; }
+.space-feature:hover img { transform: scale(1.02); }
+.space-feature-body {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 48px 20px 16px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.7) 100%);
+}
+.space-kicker { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; color: #ffe08a; }
+.space-feature-body strong { font-size: 24px; line-height: 1.3; }
+.space-feature-desc { font-size: 13.5px; opacity: 0.92; }
+.space-links { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.space-link { display: block; text-decoration: none; color: var(--text); }
+.space-link img { width: 100%; height: 110px; object-fit: cover; border-radius: 12px; display: block; background: #e8e8ed; }
+.space-link-title { display: block; font-size: 14px; font-weight: 700; margin-top: 6px; line-height: 1.35; }
+.space-link-meta { display: block; font-size: 12px; color: var(--muted); }
+@media (max-width: 600px) {
+  .space-feature img { height: 230px; }
+  .space-link img { height: 84px; }
+  .space-link-title { font-size: 13px; }
+}
 
 /* ===== ギャラリー ===== */
 .gallery-grid {

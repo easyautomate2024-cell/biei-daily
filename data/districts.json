@@ -1,0 +1,49 @@
+{
+  "series": "美瑛の地区を、宇宙から",
+  "note": "地区の区切りは令和2年国勢調査の字(あざ)。美馬牛駅まわりの市街(美馬牛南・美馬牛北)は美馬牛に含める。人数は載せない。",
+  "episodes": [
+    {
+      "id": "d0240",
+      "no": 1,
+      "name": "美馬牛",
+      "kana": "びばうし",
+      "lead": "とんがり屋根の小学校がある地区",
+      "origin": "名前の由来は、アイヌ語の「ピパ・ウ・シ」（カラス貝が多い川）。",
+      "body": "美瑛の市街から南へ。JR富良野線の美馬牛駅のまわりに小さな市街があり、その外側に畑と丘が広がります。塔のある美馬牛小学校は、写真家・前田真三さんが紹介して知られるようになった撮影スポットです。いまも子どもたちが通う学校なので、校内には入らず、外から眺めてください。",
+      "seasons": [
+        {
+          "label": "冬",
+          "date": "2026-02-25",
+          "img": "photos/districts/d0240-1.jpg"
+        },
+        {
+          "label": "春",
+          "date": "2026-05-23",
+          "img": "photos/districts/d0240-2.jpg"
+        },
+        {
+          "label": "夏",
+          "date": "2026-07-05",
+          "img": "photos/districts/d0240-3.jpg"
+        },
+        {
+          "label": "秋",
+          "date": "2026-09-23",
+          "img": "photos/districts/d0240-4.jpg"
+        }
+      ],
+      "reel": "https://www.instagram.com/reel/DeNfSkzh_YA/",
+      "sources": [
+        {
+          "title": "アイヌ語地名で歩く美瑛・上富良野（十勝岳ジオパーク、2022年）",
+          "url": "https://tokachidake-geopark.jp/wp/wp-content/uploads/2022/11/9ffba19f3abbcff79f466a8106ae0b52.pdf"
+        },
+        {
+          "title": "美馬牛小学校（美瑛町）",
+          "url": "https://town.biei.hokkaido.jp/child/education/school/bibasho/"
+        }
+      ],
+      "published": "2026-10-08"
+    }
+  ]
+}

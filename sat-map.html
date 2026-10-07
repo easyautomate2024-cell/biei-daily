@@ -53,7 +53,7 @@
   gtag('config', 'G-2DT79T20E6');
 </script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="style.css?v=13">
+<link rel="stylesheet" href="style.css?v=14">
 <style>
 .satmap-wrap { max-width: 900px; margin: 0 auto; }
 .satmap-box { position: relative; }
@@ -106,8 +106,9 @@
       <span class="logo-sub">BIEI DAILY</span>
     </a>
     <div class="nav-links">
-      <a href="index.html">今日のスコア</a>
-      <a href="satellite.html">衛星</a>
+      <a href="index.html">今日</a>
+      <a href="satellite.html" aria-current="page">宇宙から</a>
+      <a href="map.html">直売所</a>
       <a href="game.html">ゲーム</a>
       <a href="about.html">About</a>
       <a href="https://www.instagram.com/biei_explorer/" rel="noopener" class="nav-cta">Instagram</a>
@@ -128,6 +129,7 @@
       <div class="layers">
         <button id="btn-sat" class="on" type="button"><span class="dot"></span>衛星写真 <span class="sub" id="sat-date"></span></button>
         <button id="btn-label" class="on" type="button"><span class="dot"></span>地名</button>
+        <button id="btn-district" type="button"><span class="dot"></span>地区の境界</button>
         <div class="slider">衛星写真の透け具合<input id="op" type="range" min="20" max="100" value="100" aria-label="衛星写真の透け具合"></div>
       </div>
     </div>
@@ -139,7 +141,7 @@
     <p class="eyebrow">How To</p>
     <h2>使い方</h2>
     <p class="howto">
-      <b>衛星写真</b>と<b>地名</b>は、左上のボタンでそれぞれオン・オフできます。<br>
+      <b>衛星写真</b>・<b>地名</b>・<b>地区の境界</b>は、左上のボタンでそれぞれオン・オフできます。地区の境界を押すと、<a href="districts.html">「美瑛の地区を、宇宙から」</a>の紹介へ進めます。<br>
       写真の下の地図(道路・川)を見たいときは<b>透け具合</b>のつまみを左へ。写真がすっと薄くなって、地理院地図が現れます。<br>
       引いた状態では主な地名だけ、寄っていくと集落名、さらに寄ると市街の町名が出ます。
     </p>
@@ -152,7 +154,7 @@
     <p class="howto">
       衛星は約5日おきに美瑛の上空を通ります。毎朝自動で通過を確認し、<b>町全体の85%以上で地表が見えていた</b>いちばん新しい日を採用します。丘だけを切り出した<a href="satellite.html">「衛星が見た美瑛」</a>より範囲が広いぶん、山側に雲が残る日が多く、採用日が丘の画像と違うことがあります。
     </p>
-    <p class="note">データ: <a href="https://registry.opendata.aws/sentinel-2-l2a-cogs/" rel="noopener">Sentinel-2 L2A (ESA / AWS Open Data)</a> ／ 地図: <a href="https://maps.gsi.go.jp/development/ichiran.html" rel="noopener">地理院タイル</a>(国土地理院) ／ 地図ライブラリ: <a href="https://leafletjs.com/" rel="noopener">Leaflet</a></p>
+    <p class="note">データ: <a href="https://registry.opendata.aws/sentinel-2-l2a-cogs/" rel="noopener">Sentinel-2 L2A (ESA / AWS Open Data)</a> ／ 地図: <a href="https://maps.gsi.go.jp/development/ichiran.html" rel="noopener">地理院タイル</a>(国土地理院) ／ 地区の境界: 「令和2年国勢調査 町丁・字等別境界データ」(総務省統計局)を加工して作成 ／ 地図ライブラリ: <a href="https://leafletjs.com/" rel="noopener">Leaflet</a></p>
   </section>
 </main>
 
@@ -254,10 +256,46 @@
   });
   op.addEventListener("input", () => { if (sat) sat.setOpacity(op.value / 100); });
 
+  // 地区(字)の境界。国勢調査の町丁・字等別境界を単純化したもの。押すとその地区の紹介へ
+  const bd = document.getElementById("btn-district");
+  let districts = null;
+  const loadDistricts = async () => {
+    const [shapes, data] = await Promise.all([
+      fetch("data/districts.geojson").then((r) => r.json()),
+      fetch("data/districts.json", { cache: "no-store" }).then((r) => r.json()).catch(() => ({ episodes: [] })),
+    ]);
+    const done = new Set(data.episodes.map((e) => e.id));
+    // 衛星写真を消したとき(淡色地図の上)でも白い線が見えるよう、下に薄い影の線を敷く
+    const halo = L.geoJSON(shapes, {
+      filter: (f) => f.properties.kind === "aza",
+      style: { color: "#1d1d1f", weight: 3.2, opacity: 0.35, fillOpacity: 0 },
+      interactive: false,
+    });
+    return L.layerGroup([halo, L.geoJSON(shapes, {
+      filter: (f) => f.properties.kind === "aza",
+      style: (f) => done.has(f.properties.id)
+        ? { color: "#e2b23a", weight: 3, fillOpacity: 0 }
+        : { color: "#ffffff", weight: 1.5, opacity: 0.9, fillOpacity: 0 },
+      onEachFeature: (f, lyr) => {
+        const p = f.properties;
+        lyr.bindPopup(done.has(p.id)
+          ? `<b>${p.name}</b><br><a href="districts.html#${p.id}">宇宙からの紹介を見る →</a>`
+          : `<b>${p.name}</b><br><a href="districts.html">美瑛の地区を、宇宙から</a>(紹介は準備中)`);
+      },
+    })]);
+  };
+  bd.addEventListener("click", async () => {
+    if (!districts) districts = await loadDistricts();
+    const on = !map.hasLayer(districts);
+    on ? districts.addTo(map) : map.removeLayer(districts);
+    bd.classList.toggle("on", on);
+  });
+
   // 計測: レイヤー操作と拡大が使われているか
   if (typeof gtag === "function") {
     bs.addEventListener("click", () => gtag("event", "satmap_toggle", { layer: "sat" }));
     bl.addEventListener("click", () => gtag("event", "satmap_toggle", { layer: "label" }));
+    bd.addEventListener("click", () => gtag("event", "satmap_toggle", { layer: "district" }));
   }
 })();
 </script>

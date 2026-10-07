@@ -52,7 +52,7 @@
   gtag('js', new Date());
   gtag('config', 'G-2DT79T20E6');
 </script>
-<link rel="stylesheet" href="style.css?v=13">
+<link rel="stylesheet" href="style.css?v=14">
 <style>
 /* satellite.html 専用スタイル(共有CSSは変更しない) */
 
@@ -198,7 +198,8 @@
       <span class="logo-sub">BIEI DAILY</span>
     </a>
     <div class="nav-links">
-      <a href="index.html">今日のスコア</a>
+      <a href="index.html">今日</a>
+      <a href="satellite.html" aria-current="page">宇宙から</a>
       <a href="map.html">直売所</a>
       <a href="game.html">ゲーム</a>
       <a href="about.html">About</a>
@@ -235,12 +236,27 @@
     <p class="sat-caption">上が北。中央上の白い集まりが美瑛の市街地、ベージュ〜金色の区画は色づいた麦畑、緑はビート・豆・じゃがいもなど。10m解像度(1ピクセル=10m四方)。</p>
   </section>
 
-  <a class="card sat-teaser" href="sat-map.html">
-    <p class="eyebrow">Satellite Map</p>
-    <h2>衛星をマップで見る</h2>
-    <p class="sat-teaser-desc">美瑛町ぜんぶを、最新の衛星写真で。地名を重ねて、動かして、拡大して。自分の家や畑、行った丘を探せます。</p>
-    <p class="sat-teaser-meta">地図を開く →</p>
-  </a>
+  <section class="card">
+    <p class="eyebrow">More From Space</p>
+    <h2>宇宙から、ほかの見方</h2>
+    <div class="space-links">
+      <a class="space-link" href="districts.html">
+        <img src="photos/districts/og.jpg" width="1200" height="630" loading="lazy" alt="美瑛町の地区の境界を衛星写真の上に描いた地図">
+        <span class="space-link-title">美瑛の地区を、宇宙から</span>
+        <span class="space-link-meta">34の地区を四季の写真で</span>
+      </a>
+      <a class="space-link" href="sat-map.html">
+        <img src="photos/sat/sat-hills.jpg" width="660" height="789" loading="lazy" alt="衛星から見た美瑛の丘のパッチワーク">
+        <span class="space-link-title">衛星をマップで見る</span>
+        <span class="space-link-meta">町ぜんぶを動かして探す</span>
+      </a>
+      <a class="space-link" href="#tl-card">
+        <img src="photos/sat/timelapse-poster.jpg" loading="lazy" alt="衛星写真をつないだ美瑛の丘の1年のタイムラプス">
+        <span class="space-link-title">この1年の丘</span>
+        <span class="space-link-meta">タイムラプス(このページの下)</span>
+      </a>
+    </div>
+  </section>
 
   <section class="card hidden" id="tl-card">
     <p class="eyebrow">Time Lapse</p>

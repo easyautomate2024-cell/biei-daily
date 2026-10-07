@@ -52,7 +52,7 @@
   gtag('js', new Date());
   gtag('config', 'G-2DT79T20E6');
 </script>
-<link rel="stylesheet" href="style.css?v=13">
+<link rel="stylesheet" href="style.css?v=14">
 </head>
 <body>
 <nav class="site-nav">
@@ -62,9 +62,9 @@
       <span class="logo-sub">BIEI DAILY</span>
     </a>
     <div class="nav-links">
-      <a href="logic.html">スコアの仕組み</a>
+      <a href="index.html" aria-current="page">今日</a>
+      <a href="satellite.html">宇宙から</a>
       <a href="map.html">直売所</a>
-      <a href="satellite.html">衛星</a>
       <a href="game.html">ゲーム</a>
       <a href="about.html">About</a>
       <a href="https://www.instagram.com/biei_explorer/" rel="noopener" class="nav-cta">Instagram</a>
@@ -134,13 +134,35 @@
     <p class="note">※ 3日目以降は予報のブレが大きくなります。直前にもう一度ご確認ください。 <a href="logic.html">スコアの仕組み →</a></p>
   </section>
 
-  <a class="card sat-teaser" href="satellite.html">
-    <img class="card-photo" id="sat-teaser-img" src="photos/sat/sat-hills.jpg" width="660" height="789" loading="lazy" alt="衛星から見た美瑛のパッチワーク">
-    <p class="eyebrow">Satellite View</p>
-    <h2>衛星が見た美瑛</h2>
-    <p class="sat-teaser-desc">宇宙から見た、いまのパッチワーク。10m解像度で畑の一枚一枚が見えます。</p>
-    <p class="sat-teaser-meta"><span id="sat-teaser-date">最新の晴れた撮影日を表示</span> → 画像を見る</p>
-  </a>
+  <section class="card space-card">
+    <p class="eyebrow">From Space</p>
+    <h2>宇宙から見る美瑛</h2>
+    <a class="space-feature" id="space-feature" href="districts.html">
+      <img id="space-feature-img" src="photos/districts/og.jpg" width="1200" height="630" loading="lazy" alt="美瑛町の地区の境界を衛星写真の上に描いた地図">
+      <span class="space-feature-body">
+        <span class="space-kicker" id="space-feature-kicker">新シリーズ</span>
+        <strong id="space-feature-title">美瑛の地区を、宇宙から</strong>
+        <span class="space-feature-desc" id="space-feature-desc">34の地区を、四季の衛星写真でひとつずつ紹介します。</span>
+      </span>
+    </a>
+    <div class="space-links">
+      <a class="space-link" href="satellite.html">
+        <img id="sat-teaser-img" src="photos/sat/sat-hills.jpg" width="660" height="789" loading="lazy" alt="衛星から見た美瑛の丘のパッチワーク">
+        <span class="space-link-title">衛星が見た美瑛</span>
+        <span class="space-link-meta" id="sat-teaser-date">最新の晴れた日</span>
+      </a>
+      <a class="space-link" href="satellite.html#tl-card">
+        <img src="photos/sat/timelapse-poster.jpg" loading="lazy" alt="衛星写真をつないだ美瑛の丘の1年のタイムラプス">
+        <span class="space-link-title">この1年の丘</span>
+        <span class="space-link-meta">タイムラプス</span>
+      </a>
+      <a class="space-link" href="sat-map.html">
+        <img src="photos/districts/og.jpg" width="1200" height="630" loading="lazy" alt="美瑛町ぜんぶの衛星写真の地図">
+        <span class="space-link-title">マップで見る</span>
+        <span class="space-link-meta">町ぜんぶ</span>
+      </a>
+    </div>
+  </section>
 
   <a class="card sat-teaser" href="game.html">
     <img class="card-photo" src="photos/game-og.jpg" width="1200" height="630" loading="lazy" alt="ゲーム「麦刈りの丘」の画面。丘の畑をコンバインが走る">
@@ -148,13 +170,6 @@
     <h2>麦刈りの丘</h2>
     <p class="sat-teaser-desc">美瑛の丘を、コンバインで走って麦を刈る小さなゲーム。刈り終えると、あなたの畑が衛星からどう見えるかも分かります。</p>
     <p class="sat-teaser-meta">スマホでも遊べます → 遊んでみる</p>
-  </a>
-
-  <a class="card sat-teaser" href="sat-map.html">
-    <p class="eyebrow">Satellite Map</p>
-    <h2>衛星をマップで見る</h2>
-    <p class="sat-teaser-desc">美瑛町ぜんぶを最新の衛星写真で。地名を重ねて動かせるので、自分の家や畑を探せます。</p>
-    <p class="sat-teaser-meta">地図を開く →</p>
   </a>
 
   <section class="card sun-card">
@@ -223,6 +238,6 @@
   <p>このサイトは個人が運営する非公式の情報サイトです。スコアは気象条件からの推定であり、見え方・安全を保証しません。</p>
 </footer>
 
-<script src="app.js?v=21"></script>
+<script src="app.js?v=22"></script>
 </body>
 </html>
