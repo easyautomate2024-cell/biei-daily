@@ -289,6 +289,23 @@ a.sat-teaser {
 .sat-teaser-desc { font-size: 14px; margin-bottom: 8px; }
 .sat-teaser-meta { font-size: 13px !important; color: var(--accent) !important; font-weight: 600; }
 
+/* ===== 新シリーズの1行案内(トップのスコアの上) ===== */
+.series-bar {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--bg-white); border: 1px solid var(--border); border-radius: 14px;
+  padding: 10px 16px 10px 10px; margin-bottom: 20px;
+  text-decoration: none; color: var(--text);
+  transition: box-shadow 0.25s;
+}
+.series-bar:hover { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08); }
+.series-bar img { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
+.series-text { flex: 1; min-width: 0; font-size: 14.5px; font-weight: 700; line-height: 1.45; }
+.series-pill {
+  display: inline-block; margin-right: 8px; padding: 1px 9px; border-radius: 980px;
+  font-size: 11px; font-weight: 700; color: #7a5a00; background: #fff1c2; vertical-align: 1px;
+}
+.series-arrow { color: var(--accent); font-weight: 700; }
+
 /* ===== 宇宙から(トップの枠): 最新の地区を大きく、ほかの衛星ページを小さく ===== */
 .space-feature {
   display: block; position: relative; overflow: hidden;

@@ -702,6 +702,10 @@ async function loadDistrictFeature() {
     document.getElementById("space-feature-kicker").textContent = `美瑛の地区を、宇宙から No.${e.no}`;
     document.getElementById("space-feature-title").textContent = `${e.name}（${e.kana}）`;
     document.getElementById("space-feature-desc").textContent = e.lead;
+    // スコアの上の1行案内も最新回に
+    document.getElementById("series-bar").href = `districts.html#${e.id}`;
+    document.getElementById("series-bar-img").src = e.seasons[e.seasons.length - 1].img;
+    document.getElementById("series-bar-title").textContent = `美瑛の地区を、宇宙から No.${e.no} ${e.name}`;
   } catch (e) { /* 失敗時はシリーズの案内のまま */ }
 }
 
