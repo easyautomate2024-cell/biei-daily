@@ -696,15 +696,20 @@ async function loadDistrictFeature() {
     const eps = (await res.json()).episodes || [];
     if (!eps.length) return;
     const e = eps.reduce((a, b) => (b.no > a.no ? b : a));
+    // 「60年前といま」がある回は、いまの空中写真を見せる
+    const now = e.thennow ? e.thennow.items[e.thennow.items.length - 1] : null;
+    const img = now ? now.img : e.seasons[e.seasons.length - 1].img;
     document.getElementById("space-feature").href = `districts.html#${e.id}`;
-    document.getElementById("space-feature-img").src = e.seasons[e.seasons.length - 1].img;
-    document.getElementById("space-feature-img").alt = `${e.name}の衛星写真。金色の線が地区の範囲`;
+    document.getElementById("space-feature-img").src = img;
+    document.getElementById("space-feature-img").alt = now
+      ? `${e.name}・${e.thennow.spot}の空中写真(いま)`
+      : `${e.name}の衛星写真。金色の線が地区の範囲`;
     document.getElementById("space-feature-kicker").textContent = `美瑛の地区を、宇宙から No.${e.no}`;
     document.getElementById("space-feature-title").textContent = `${e.name}（${e.kana}）`;
     document.getElementById("space-feature-desc").textContent = e.lead;
     // スコアの上の1行案内も最新回に
     document.getElementById("series-bar").href = `districts.html#${e.id}`;
-    document.getElementById("series-bar-img").src = e.seasons[e.seasons.length - 1].img;
+    document.getElementById("series-bar-img").src = img;
     document.getElementById("series-bar-title").textContent = `美瑛の地区を、宇宙から No.${e.no} ${e.name}`;
   } catch (e) { /* 失敗時はシリーズの案内のまま */ }
 }

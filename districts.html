@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>美瑛の地区を、宇宙から — 今日の美瑛</title>
-<meta name="description" content="美瑛町の農村部は34の地区(字)に分かれています。ひとつずつ、冬・春・夏・秋の衛星写真と名前の由来で紹介していくシリーズです。">
+<meta name="description" content="美瑛町の農村部は34の地区(字)に分かれています。ひとつずつ、宇宙からの衛星写真と60年前の空中写真、名前の由来で紹介していくシリーズです。">
 <link rel="canonical" href="https://easyautomate2024-cell.github.io/biei-daily/districts.html">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta property="og:title" content="美瑛の地区を、宇宙から — 今日の美瑛">
-<meta property="og:description" content="34の地区を、四季の衛星写真でひとつずつ紹介します。">
+<meta property="og:description" content="34の地区を、衛星写真と60年前の空中写真でひとつずつ紹介します。">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://easyautomate2024-cell.github.io/biei-daily/districts.html">
 <meta property="og:image" content="https://easyautomate2024-cell.github.io/biei-daily/photos/districts/og.jpg">
@@ -75,6 +75,33 @@
 .dlabel.done { font-size: 14px; color: #ffe08a; }
 .dcard h2 .kana { font-size: 16px; font-weight: 600; color: var(--muted); letter-spacing: 0; margin-left: 6px; }
 .dlead { font-size: 16px !important; color: var(--text) !important; font-weight: 600; margin-bottom: 16px; }
+/* 60年前といま: ドラッグで境界を動かして比べる(衛星ページの年次比較と同じ作り) */
+.tn { margin: 6px 0 10px; }
+.tn-wrap {
+  position: relative; overflow: hidden; border-radius: 12px; border: 1px solid var(--border2);
+  touch-action: pan-y; cursor: ew-resize; background: #e8e8ed;
+}
+.tn-wrap img { width: 100%; height: auto; display: block; -webkit-user-drag: none; user-select: none; }
+/* はじめは境界を左寄りに置き、目印(写真の中央)を「いま」の側で見せる */
+.tn-past { position: absolute; inset: 0; clip-path: inset(0 65% 0 0); }
+.tn-divider {
+  position: absolute; top: 0; bottom: 0; left: 35%; width: 3px; margin-left: -1.5px;
+  background: #fff; box-shadow: 0 0 6px rgba(0,0,0,0.5); pointer-events: none;
+}
+.tn-divider::after {
+  content: "◀ ▶"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: #fff; color: #1d1d1f; font-size: 11px; font-weight: 700; letter-spacing: 1px;
+  padding: 6px 10px; border-radius: 980px; white-space: nowrap; box-shadow: 0 1px 6px rgba(0,0,0,0.35);
+}
+.tn-label {
+  position: absolute; top: 10px; font-size: 12px; font-weight: 700; color: #fff;
+  background: rgba(0,0,0,0.55); border-radius: 980px; padding: 4px 12px; pointer-events: none;
+}
+.tn-label.past { left: 10px; }
+.tn-label.now { right: 10px; }
+.tn figcaption { font-size: 13px; color: var(--muted); margin-top: 6px; }
+.tn-note { font-size: 15px !important; color: var(--text) !important; margin-bottom: 14px; }
+.dsub { font-size: 13px; font-weight: 700; color: var(--muted); margin: 14px 0 0; letter-spacing: .02em; }
 .dseasons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 6px 0 18px; }
 .dseasons figure { margin: 0; }
 .dseasons img { width: 100%; height: auto; aspect-ratio: 9 / 10; object-fit: cover; border-radius: 12px; display: block; background: #e8e8ed; }
@@ -90,7 +117,11 @@
 .howto { font-size: 14.5px; color: var(--muted); line-height: 1.8; }
 @media (max-width: 600px) {
   #dmap { width: calc(100% + 40px); margin: -24px -20px 16px; height: min(60vh, 520px); }
+  /* 60年前といま がある回は四季を小さく横一列に。ない回は2列 */
   .dseasons { grid-template-columns: repeat(2, 1fr); }
+  .dseasons.small { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .dseasons.small figcaption { font-size: 11.5px; }
+  .dseasons.small figcaption b { display: block; margin: 0; }
 }
 </style>
 </head>
@@ -115,7 +146,7 @@
 <header class="hero small">
   <p class="hero-eyebrow">Districts from Space</p>
   <h1>美瑛の地区を、宇宙から</h1>
-  <p class="hero-sub">美瑛町の農村部は、34の地区(字)に分かれています。<br>ひとつずつ、冬・春・夏・秋の衛星写真で紹介していきます。</p>
+  <p class="hero-sub">美瑛町の農村部は、34の地区(字)に分かれています。<br>ひとつずつ、宇宙からの衛星写真と、60年前の空中写真で紹介していきます。</p>
 </header>
 
 <main>
@@ -143,10 +174,11 @@
     <p class="howto">
       地区の区切りは、国勢調査(2020年)の<b>字(あざ)</b>です。美馬牛駅のまわりの市街(美馬牛南・美馬牛北)は、美馬牛に含めています。
       美瑛の市街地の町は、このシリーズでは扱いません。<br>
+      地区の目印のまわりは、国土地理院の1960年代の空中写真と、いまの空中写真で比べています。<br>
       地名の由来は、資料によって説明が少しずつ違うことがあります。地区ごとに、もとにした資料を記しています。
       インスタ <a href="https://www.instagram.com/biei_explorer/" rel="noopener">@biei_explorer</a> では、同じ地区をリール動画でも紹介しています。
     </p>
-    <p class="note">衛星写真: Contains modified Copernicus Sentinel data 2026(<a href="https://registry.opendata.aws/sentinel-2-l2a-cogs/" rel="noopener">Sentinel-2 L2A</a>・10m解像度) ／ 地区の境界: 「令和2年国勢調査 町丁・字等別境界データ」(総務省統計局)を加工して作成 ／ 地図: <a href="https://maps.gsi.go.jp/development/ichiran.html" rel="noopener">地理院タイル</a>(国土地理院) ／ 地図ライブラリ: <a href="https://leafletjs.com/" rel="noopener">Leaflet</a></p>
+    <p class="note">衛星写真: Contains modified Copernicus Sentinel data 2026(<a href="https://registry.opendata.aws/sentinel-2-l2a-cogs/" rel="noopener">Sentinel-2 L2A</a>・10m解像度) ／ 空中写真: 国土地理院の空中写真(<a href="https://maps.gsi.go.jp/development/ichiran.html" rel="noopener">地理院タイル</a>の「1961年〜1969年」「全国最新写真(シームレス)」)を加工して作成 ／ 地区の境界: 「令和2年国勢調査 町丁・字等別境界データ」(総務省統計局)を加工して作成 ／ 地図: <a href="https://maps.gsi.go.jp/development/ichiran.html" rel="noopener">地理院タイル</a>(国土地理院) ／ 地図ライブラリ: <a href="https://leafletjs.com/" rel="noopener">Leaflet</a></p>
   </section>
 </main>
 
@@ -169,12 +201,29 @@
   const done = new Map(episodes.map((e) => [e.id, e]));
 
   // ---- 紹介した地区のカード ----
+  const thennow = (e) => {
+    const [past, now] = e.thennow.items;
+    return `
+      <figure class="tn">
+        <div class="tn-wrap">
+          <img src="${esc(now.img)}" width="960" height="720" loading="lazy" alt="${esc(e.name)}・${esc(e.thennow.spot)}の空中写真(${esc(now.label)})">
+          <div class="tn-past"><img src="${esc(past.img)}" width="960" height="720" loading="lazy" alt="${esc(e.name)}・${esc(e.thennow.spot)}の空中写真(${esc(past.label)})"></div>
+          <div class="tn-divider"></div>
+          <span class="tn-label past">${esc(past.label)}</span>
+          <span class="tn-label now">${esc(now.label)}</span>
+        </div>
+        <figcaption>60年前といま(${esc(e.thennow.spot)})。左右に動かして比べられます</figcaption>
+      </figure>
+      ${e.thennow.note ? `<p class="tn-note">${esc(e.thennow.note)}</p>` : ""}`;
+  };
   document.getElementById("episodes").innerHTML = episodes.map((e) => `
     <article class="card dcard" id="${esc(e.id)}">
       <p class="eyebrow">No.${e.no}</p>
       <h2>${esc(e.name)}<span class="kana">${esc(e.kana)}</span></h2>
       <p class="dlead">${esc(e.lead)}</p>
-      <div class="dseasons">
+      ${e.thennow ? thennow(e) : ""}
+      ${e.thennow ? `<p class="dsub">宇宙から見た四季(金色の線が地区の範囲)</p>` : ""}
+      <div class="dseasons${e.thennow ? " small" : ""}">
         ${e.seasons.map((s) => `
           <figure>
             <img src="${esc(s.img)}" width="720" height="800" loading="lazy" alt="${esc(e.name)}の衛星写真(${esc(s.label)}・${fmt(s.date)})。金色の線が地区の範囲">
@@ -184,8 +233,28 @@
       <p class="dorigin">${esc(e.origin)}</p>
       <p>${esc(e.body)}</p>
       ${e.reel ? `<a class="reel-btn" href="${esc(e.reel)}" rel="noopener">インスタのリールで見る</a>` : ""}
-      <p class="note">出典: ${e.sources.map((s) => `<a href="${esc(s.url)}" rel="noopener">${esc(s.title)}</a>`).join(" ／ ")}</p>
+      <p class="note">出典: ${e.sources.map((s) => `<a href="${esc(s.url)}" rel="noopener">${esc(s.title)}</a>`).join(" ／ ")}${e.thennow ? ` ／ 空中写真: <a href="https://maps.gsi.go.jp/development/ichiran.html" rel="noopener">国土地理院</a>の空中写真を加工して作成` : ""}</p>
     </article>`).join("");
+
+  // 60年前といま: ドラッグ(指でなぞる)で境界を動かす
+  document.querySelectorAll(".tn-wrap").forEach((wrap) => {
+    const past = wrap.querySelector(".tn-past"), line = wrap.querySelector(".tn-divider");
+    const move = (x) => {
+      const r = wrap.getBoundingClientRect();
+      const pct = Math.max(2, Math.min(98, ((x - r.left) / r.width) * 100));
+      past.style.clipPath = `inset(0 ${100 - pct}% 0 0)`;
+      line.style.left = `${pct}%`;
+    };
+    let dragging = false, used = false;
+    wrap.addEventListener("pointerdown", (ev) => { dragging = true; wrap.setPointerCapture(ev.pointerId); move(ev.clientX); });
+    wrap.addEventListener("pointermove", (ev) => { if (dragging) move(ev.clientX); });
+    const end = () => {
+      if (dragging && !used && typeof gtag === "function") gtag("event", "thennow_drag", { district: wrap.closest(".dcard").id });
+      dragging = false; used = true;
+    };
+    wrap.addEventListener("pointerup", end);
+    wrap.addEventListener("pointercancel", end);
+  });
 
   // ---- これから紹介する地区 ----
   const coming = shapes.features

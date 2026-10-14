@@ -32,6 +32,20 @@
           "img": "photos/districts/d0240-4.jpg"
         }
       ],
+      "thennow": {
+        "spot": "美馬牛駅と小学校のまわり",
+        "note": "道と線路、森の形は、60年前とほとんど同じです。変わったのは畑で、細長い小さな畑が、大きな一枚になりました。",
+        "items": [
+          {
+            "label": "1960年代",
+            "img": "photos/districts/d0240-then.jpg"
+          },
+          {
+            "label": "いま",
+            "img": "photos/districts/d0240-now.jpg"
+          }
+        ]
+      },
       "reel": "https://www.instagram.com/reel/DeNfSkzh_YA/",
       "sources": [
         {
@@ -44,6 +58,67 @@
         }
       ],
       "published": "2026-10-08"
+    },
+    {
+      "id": "d0420",
+      "no": 2,
+      "name": "白金",
+      "kana": "しろがね",
+      "lead": "青い池と白金温泉がある、十勝岳のふもとの地区",
+      "origin": "白金温泉の名は、1950年に湯を掘り当てた当時の町長が、その湯を「地底から湧いたプラチナ（白金）」にたとえたことから。",
+      "body": "美瑛の市街から南東へ約20km、十勝岳のふもとに広がる地区です。このあたりにはかつて畠山温泉という温泉がありましたが、1926年の十勝岳の噴火で起きた泥流に壊されました。1950年からの掘削で、もう一度湯を掘り当てたのが、いまの白金温泉です。",
+      "seasons": [
+        {
+          "label": "冬",
+          "date": "2026-02-25",
+          "img": "photos/districts/d0420-1.jpg"
+        },
+        {
+          "label": "春",
+          "date": "2026-05-23",
+          "img": "photos/districts/d0420-2.jpg"
+        },
+        {
+          "label": "夏",
+          "date": "2026-07-05",
+          "img": "photos/districts/d0420-3.jpg"
+        },
+        {
+          "label": "秋",
+          "date": "2026-09-23",
+          "img": "photos/districts/d0420-4.jpg"
+        }
+      ],
+      "thennow": {
+        "spot": "青い池のまわり",
+        "note": "60年前、ここに池はありませんでした。1988年の十勝岳の噴火のあと、泥流をためこむ砂防ダム（ブロック堰堤）が1989年に約半年で急いでつくられ、そこに水がたまってできたのが青い池です。水が青く見えるのは、白金温泉のあたりで湧くアルミニウムを含む水が川の水と混ざってできる、ごく細かな粒が青い光を散らすためといわれています。",
+        "items": [
+          {
+            "label": "1960年代",
+            "img": "photos/districts/d0420-then.jpg"
+          },
+          {
+            "label": "いま",
+            "img": "photos/districts/d0420-now.jpg"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "title": "美瑛町の観光地「青い池」（北海道開発局 旭川開発建設部）",
+          "url": "https://www.hkd.mlit.go.jp/as/tisui/ho928l00000010hl-att/ho928l00000012bg.pdf"
+        },
+        {
+          "title": "温泉（美瑛町観光協会）",
+          "url": "https://www.biei-hokkaido.jp/ja/hot-spring"
+        },
+        {
+          "title": "白金温泉（十勝岳ジオパーク）",
+          "url": "https://tokachidake-geopark.jp/geoname/2695/"
+        }
+      ],
+      "reel": "https://www.instagram.com/reel/DeeXzUAKzBi/",
+      "published": "2026-10-14"
     }
   ]
 }
