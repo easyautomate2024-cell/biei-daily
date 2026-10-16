@@ -53,6 +53,15 @@
   gtag('config', 'G-2DT79T20E6');
 </script>
 <link rel="stylesheet" href="style.css?v=15">
+<style>
+/* 更新履歴(トップの「最近の更新」と同じ見た目) */
+.updates { list-style: none; padding: 0; margin: 4px 0 0; }
+.updates li { display: flex; gap: 14px; padding: 11px 0; border-top: 1px solid var(--border); font-size: 15px; line-height: 1.65; }
+.updates li:first-child { border-top: none; }
+.updates time { flex-shrink: 0; min-width: 6.4em; padding-top: 1px; color: var(--muted); font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.updates a { color: var(--text); text-decoration: none; }
+.updates a:hover { color: var(--accent); }
+</style>
 </head>
 <body>
 <nav class="site-nav">
@@ -135,6 +144,13 @@
     </ul>
   </section>
 
+  <section class="card" id="updates">
+    <p class="eyebrow">Updates</p>
+    <h2>更新履歴</h2>
+    <p>2026年7月の公開から、少しずつ道具を増やしています。見頃のスコア・衛星写真・十勝岳の火山の記録は、毎日自動で更新しています。</p>
+    <ul class="updates" id="updates-all"></ul>
+  </section>
+
   <section>
     <a class="btn-link" href="index.html">← 今日のスコアを見る</a>
   </section>
@@ -146,5 +162,19 @@
   <p>写真・運営: <a href="https://www.instagram.com/biei_explorer/" rel="noopener">@biei_explorer</a></p>
   <p>このサイトは個人が運営する非公式の情報サイトです。スコアは気象条件からの推定であり、見え方・安全を保証しません。</p>
 </footer>
+<script>
+// 更新履歴(data/updates.json)をすべて表示する
+(async () => {
+  try {
+    const res = await fetch("data/updates.json", { cache: "no-store" });
+    if (!res.ok) return;
+    const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    const fmt = (d) => `${d.slice(0, 4)}.${Number(d.slice(5, 7))}.${Number(d.slice(8, 10))}`;
+    document.getElementById("updates-all").innerHTML = ((await res.json()).items || []).map((u) => `
+      <li><time datetime="${esc(u.date)}">${fmt(u.date)}</time>${u.url ? `<a href="${esc(u.url)}">${esc(u.text)}</a>` : `<span>${esc(u.text)}</span>`}</li>`).join("");
+    if (location.hash === "#updates") document.getElementById("updates").scrollIntoView({ block: "start" });
+  } catch (e) { /* 読めないときは説明文だけ */ }
+})();
+</script>
 </body>
 </html>

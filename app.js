@@ -714,12 +714,28 @@ async function loadDistrictFeature() {
   } catch (e) { /* 失敗時はシリーズの案内のまま */ }
 }
 
+// 最近の更新(data/updates.json の新しい3件)。読めないときはカードごと出さない
+async function loadUpdates() {
+  try {
+    const res = await fetch("data/updates.json", { cache: "no-store" });
+    if (!res.ok) return;
+    const items = ((await res.json()).items || []).slice(0, 3);
+    if (!items.length) return;
+    const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    const fmt = (d) => `${d.slice(0, 4)}.${Number(d.slice(5, 7))}.${Number(d.slice(8, 10))}`;
+    document.getElementById("updates-latest").innerHTML = items.map((u) => `
+      <li><time datetime="${esc(u.date)}">${fmt(u.date)}</time>${u.url ? `<a href="${esc(u.url)}">${esc(u.text)}</a>` : `<span>${esc(u.text)}</span>`}</li>`).join("");
+    document.getElementById("updates-card").classList.remove("hidden");
+  } catch (e) { /* 失敗時は出さない */ }
+}
+
 async function main() {
   renderKoyomi();
   loadVolcano();
   loadBakushu();
   loadSatTeaser();
   loadDistrictFeature();
+  loadUpdates();
   const today = tokyoDateStr();
   const tomorrow = tokyoDateStr(1);
   document.getElementById("today-date").textContent = `（${today}）`;

@@ -53,6 +53,15 @@
   gtag('config', 'G-2DT79T20E6');
 </script>
 <link rel="stylesheet" href="style.css?v=15">
+<style>
+/* 最近の更新(About の更新履歴と同じ見た目) */
+.updates { list-style: none; padding: 0; margin: 4px 0 6px; }
+.updates li { display: flex; gap: 14px; padding: 11px 0; border-top: 1px solid var(--border); font-size: 15px; line-height: 1.65; }
+.updates li:first-child { border-top: none; }
+.updates time { flex-shrink: 0; min-width: 6.4em; padding-top: 1px; color: var(--muted); font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.updates a { color: var(--text); text-decoration: none; }
+.updates a:hover { color: var(--accent); }
+</style>
 </head>
 <body>
 <nav class="site-nav">
@@ -236,6 +245,13 @@
       <li><strong>ダイヤモンドダスト指数</strong> — 厳冬の朝の気象条件から、空気が輝く朝を狙う(真冬・構想中)</li>
     </ul>
   </section>
+
+  <section class="card updates-card hidden" id="updates-card">
+    <p class="eyebrow">Updates</p>
+    <h2>最近の更新</h2>
+    <ul class="updates" id="updates-latest"></ul>
+    <p class="note"><a href="about.html#updates">これまでの更新をすべて見る →</a></p>
+  </section>
 </main>
 
 <footer>
@@ -245,6 +261,6 @@
   <p>このサイトは個人が運営する非公式の情報サイトです。スコアは気象条件からの推定であり、見え方・安全を保証しません。</p>
 </footer>
 
-<script src="app.js?v=24"></script>
+<script src="app.js?v=25"></script>
 </body>
 </html>
