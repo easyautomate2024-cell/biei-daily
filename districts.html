@@ -100,6 +100,8 @@
 .tn-label.past { left: 10px; }
 .tn-label.now { right: 10px; }
 .tn figcaption { font-size: 13px; color: var(--muted); margin-top: 6px; }
+.dterrain { margin: 6px 0 10px; }
+.dterrain img { width: 100%; height: auto; display: block; border-radius: 12px; background: #e8e8ed; }
 .tn-note { font-size: 15px !important; color: var(--text) !important; margin-bottom: 14px; }
 .dsub { font-size: 13px; font-weight: 700; color: var(--muted); margin: 14px 0 0; letter-spacing: .02em; }
 .dseasons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 6px 0 18px; }
@@ -175,10 +177,11 @@
       地区の区切りは、国勢調査(2020年)の<b>字(あざ)</b>です。美馬牛駅のまわりの市街(美馬牛南・美馬牛北)は、美馬牛に含めています。
       美瑛の市街地の町は、このシリーズでは扱いません。<br>
       地区の目印のまわりは、国土地理院の1960年代の空中写真と、いまの空中写真で比べています。<br>
+      地区の「地面の形」は、国土地理院の標高データ(航空レーザ測量などによる5m・10mの標高)から作った陰影図です。<br>
       地名の由来は、資料によって説明が少しずつ違うことがあります。地区ごとに、もとにした資料を記しています。
       インスタ <a href="https://www.instagram.com/biei_explorer/" rel="noopener">@biei_explorer</a> では、同じ地区をリール動画でも紹介しています。
     </p>
-    <p class="note">衛星写真: Contains modified Copernicus Sentinel data 2026(<a href="https://registry.opendata.aws/sentinel-2-l2a-cogs/" rel="noopener">Sentinel-2 L2A</a>・10m解像度) ／ 空中写真: 国土地理院の空中写真(<a href="https://maps.gsi.go.jp/development/ichiran.html" rel="noopener">地理院タイル</a>の「1961年〜1969年」「全国最新写真(シームレス)」)を加工して作成 ／ 地区の境界: 「令和2年国勢調査 町丁・字等別境界データ」(総務省統計局)を加工して作成 ／ 地図: <a href="https://maps.gsi.go.jp/development/ichiran.html" rel="noopener">地理院タイル</a>(国土地理院) ／ 地図ライブラリ: <a href="https://leafletjs.com/" rel="noopener">Leaflet</a></p>
+    <p class="note">衛星写真: Contains modified Copernicus Sentinel data 2026(<a href="https://registry.opendata.aws/sentinel-2-l2a-cogs/" rel="noopener">Sentinel-2 L2A</a>・10m解像度) ／ 空中写真: 国土地理院の空中写真(<a href="https://maps.gsi.go.jp/development/ichiran.html" rel="noopener">地理院タイル</a>の「1961年〜1969年」「全国最新写真(シームレス)」)を加工して作成 ／ 地形: 国土地理院の標高タイル(<a href="https://maps.gsi.go.jp/development/ichiran.html" rel="noopener">地理院タイル</a>)を加工して作成 ／ 地区の境界: 「令和2年国勢調査 町丁・字等別境界データ」(総務省統計局)を加工して作成 ／ 地図: <a href="https://maps.gsi.go.jp/development/ichiran.html" rel="noopener">地理院タイル</a>(国土地理院) ／ 地図ライブラリ: <a href="https://leafletjs.com/" rel="noopener">Leaflet</a></p>
   </section>
 </main>
 
@@ -230,10 +233,16 @@
             <figcaption><b>${esc(s.label)}</b>${fmt(s.date)}</figcaption>
           </figure>`).join("")}
       </div>
+      ${e.terrain ? `
+      <p class="dsub">地面の形(木や建物、畑の色を取りのぞいた地形。線の内側が地区の範囲)</p>
+      <figure class="dterrain">
+        <img src="${esc(e.terrain.img)}" width="960" height="720" loading="lazy" alt="${esc(e.name)}の地形の陰影図。線の内側が地区の範囲">
+      </figure>
+      ${e.terrain.note ? `<p class="tn-note">${esc(e.terrain.note)}</p>` : ""}` : ""}
       <p class="dorigin">${esc(e.origin)}</p>
       <p>${esc(e.body)}</p>
       ${e.reel ? `<a class="reel-btn" href="${esc(e.reel)}" rel="noopener">インスタのリールで見る</a>` : ""}
-      <p class="note">出典: ${e.sources.map((s) => `<a href="${esc(s.url)}" rel="noopener">${esc(s.title)}</a>`).join(" ／ ")}${e.thennow ? ` ／ 空中写真: <a href="https://maps.gsi.go.jp/development/ichiran.html" rel="noopener">国土地理院</a>の空中写真を加工して作成` : ""}</p>
+      <p class="note">出典: ${e.sources.map((s) => `<a href="${esc(s.url)}" rel="noopener">${esc(s.title)}</a>`).join(" ／ ")}${e.thennow ? ` ／ 空中写真: <a href="https://maps.gsi.go.jp/development/ichiran.html" rel="noopener">国土地理院</a>の空中写真を加工して作成` : ""}${e.terrain ? ` ／ 地形: <a href="https://maps.gsi.go.jp/development/ichiran.html" rel="noopener">国土地理院</a>の標高タイル(地理院タイル)を加工して作成` : ""}</p>
     </article>`).join("");
 
   // 60年前といま: ドラッグ(指でなぞる)で境界を動かす

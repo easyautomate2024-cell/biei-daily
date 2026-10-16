@@ -47,6 +47,10 @@
         ]
       },
       "reel": "https://www.instagram.com/reel/DeNfSkzh_YA/",
+      "terrain": {
+        "img": "photos/districts/d0240-terrain.jpg",
+        "note": "南北にのびる谷と、その西側の丘の背からなる、細長い地区です。谷の南のはしに、駅と小学校のある市街があります。東どなりは、葉っぱのような形の大きな台地（新星・福富・水沢・拓進）です。"
+      },
       "sources": [
         {
           "title": "アイヌ語地名で歩く美瑛・上富良野（十勝岳ジオパーク、2022年）",
@@ -102,6 +106,10 @@
             "img": "photos/districts/d0420-now.jpg"
           }
         ]
+      },
+      "terrain": {
+        "img": "photos/districts/d0420-terrain.jpg",
+        "note": "十勝岳の山頂から北西へ、大きなすそ野が広がる地区です。すそ野は川の深い谷に刻まれ、その出口の近くに白金温泉と青い池があります。"
       },
       "sources": [
         {
