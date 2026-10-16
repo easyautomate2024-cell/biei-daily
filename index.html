@@ -54,6 +54,10 @@
 </script>
 <link rel="stylesheet" href="style.css?v=15">
 <style>
+/* 宇宙から見る美瑛: 入口は2つ(衛星のページと、マップ)。1年のタイムラプスは衛星のページの中 */
+.space-links.two { grid-template-columns: repeat(2, 1fr); }
+.space-links.two .space-link img { height: 150px; }
+@media (max-width: 600px) { .space-links.two .space-link img { height: 110px; } }
 /* 最近の更新(About の更新履歴と同じ見た目) */
 .updates { list-style: none; padding: 0; margin: 4px 0 6px; }
 .updates li { display: flex; gap: 14px; padding: 11px 0; border-top: 1px solid var(--border); font-size: 15px; line-height: 1.65; }
@@ -161,19 +165,14 @@
         <span class="space-feature-desc" id="space-feature-desc">34の地区を、四季の衛星写真でひとつずつ紹介します。</span>
       </span>
     </a>
-    <div class="space-links">
+    <div class="space-links two">
       <a class="space-link" href="satellite.html">
         <img id="sat-teaser-img" src="photos/sat/sat-hills.jpg" width="660" height="789" loading="lazy" alt="衛星から見た美瑛の丘のパッチワーク">
         <span class="space-link-title">衛星が見た美瑛</span>
         <span class="space-link-meta" id="sat-teaser-date">最新の晴れた日</span>
       </a>
-      <a class="space-link" href="satellite.html#tl-card">
-        <img src="photos/sat/timelapse-poster.jpg" loading="lazy" alt="衛星写真をつないだ美瑛の丘の1年のタイムラプス">
-        <span class="space-link-title">この1年の丘</span>
-        <span class="space-link-meta">タイムラプス</span>
-      </a>
       <a class="space-link" href="sat-map.html">
-        <img src="photos/districts/og.jpg" width="1200" height="630" loading="lazy" alt="美瑛町ぜんぶの衛星写真の地図">
+        <img src="photos/sat/map-thumb.jpg" width="720" height="480" loading="lazy" alt="美瑛町ぜんぶの衛星写真に、地区の境界を重ねた地図">
         <span class="space-link-title">マップで見る</span>
         <span class="space-link-meta">町ぜんぶ</span>
       </a>
