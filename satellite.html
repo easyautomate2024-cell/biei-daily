@@ -94,7 +94,15 @@
 .sat-state b { color: var(--text); }
 .sat-checked { font-size: 12px; color: var(--muted); margin-top: 10px !important; }
 
-/* 通過記録 */
+/* 通過記録(ふだんは折りたたみ。晴れ待ちの間は開いておく) */
+.pass-details summary {
+  cursor: pointer; list-style: none;
+  font-size: 14px; font-weight: 700; color: var(--accent);
+}
+.pass-details summary::-webkit-details-marker { display: none; }
+.pass-details summary::after { content: " ▾"; }
+.pass-details[open] summary::after { content: " ▴"; }
+.pass-details[open] summary { margin-bottom: 14px; }
 .pass-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
@@ -223,7 +231,7 @@
       <a class="space-link" href="districts.html">
         <img src="photos/districts/og.jpg" width="1200" height="630" alt="美瑛町の地区の境界を衛星写真の上に描いた地図">
         <span class="space-link-title">美瑛の地区を、宇宙から</span>
-        <span class="space-link-meta">新シリーズ・34の地区</span>
+        <span class="space-link-meta">34の地区</span>
       </a>
       <a class="space-link" href="sat-map.html">
         <img src="photos/sat/map-thumb.jpg" width="720" height="480" alt="美瑛町ぜんぶの衛星写真に、地区の境界を重ねた地図">
@@ -289,9 +297,12 @@
   <section class="card">
     <p class="eyebrow">Pass Log</p>
     <h2>衛星の通過記録</h2>
-    <p class="sat-caption" style="margin: 0 0 16px;">衛星が美瑛の上空を通った直近5回です。雲で見送った日も、実際に撮れた画像をそのまま載せています。「更新が止まっている」のではなく「晴れを待っている」ことが、ご自身の目で確かめられます。</p>
-    <div class="pass-grid" id="pass-grid"></div>
-    <p class="sat-caption" id="pass-note">読み込み中…</p>
+    <details class="pass-details" id="pass-details">
+      <summary>くわしく見る(直近5回の写真)</summary>
+      <p class="sat-caption" style="margin: 0 0 16px;">衛星が美瑛の上空を通った直近5回です。雲で見送った日も、実際に撮れた画像をそのまま載せています。「更新が止まっている」のではなく「晴れを待っている」ことが、ご自身の目で確かめられます。</p>
+      <div class="pass-grid" id="pass-grid"></div>
+      <p class="sat-caption" id="pass-note">読み込み中…</p>
+    </details>
   </section>
 
   <section class="card">
@@ -483,6 +494,7 @@ async function setupTimelapse() {
       title.textContent = "雲のため、晴れた日の画像を待っています";
       desc.innerHTML = `表示中の画像は<b>${md(d)}</b>のものです。その後、衛星は美瑛の上空を<b>${missed}回</b>通りましたが、`
         + `いずれも雲で地表が見えず見送りました。下の<b>「衛星の通過記録」</b>で、その${missed}回に実際に撮れた画像をご覧いただけます。`;
+      document.getElementById("pass-details").open = true;      // 晴れ待ちの間は、通過記録を開いておく
     }
     badge.classList.remove("hidden");
     document.getElementById("sat-state-next").innerHTML = nextPassLabel(passes, today);

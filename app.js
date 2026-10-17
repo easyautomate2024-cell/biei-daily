@@ -472,17 +472,9 @@ async function loadBakushu() {
       return;
     }
 
-    // シーズンオフ(9/1〜3/31): 次の積算開始までのカウントダウン
+    // シーズンオフ(9/1〜3/31): カードごと隠す(4/1 から自動でまた出る)
     if (mmdd < GDD_START_MMDD || mmdd > "08-31") {
-      moveDown();
-      const nextYear = mmdd > "08-31" ? year + 1 : year;
-      const days = Math.ceil(
-        (new Date(`${nextYear}-${GDD_START_MMDD}T00:00:00`) - new Date(`${today}T00:00:00`)) / 86400000
-      );
-      status.textContent = "シーズンオフ — 小麦は雪の下で春を待っています。";
-      pred.textContent = `次の積算スタート(4/1)まで あと${days}日`;
-      stage.textContent = `平年の麦秋ピークは 7/20 頃。来季もここでカウントします。`;
-      barWrap.classList.add("hidden");
+      document.querySelector(".bakushu-card")?.classList.add("hidden");
       return;
     }
 
