@@ -34,6 +34,7 @@
       ],
       "thennow": {
         "spot": "美馬牛駅と小学校のまわり",
+        "now_note": "「いま」は2009年9〜10月に撮影された空中写真です",
         "note": "道と線路、森の形は、60年前とほとんど同じです。変わったのは畑で、細長い小さな畑が、大きな一枚になりました。",
         "items": [
           {
@@ -95,6 +96,7 @@
       ],
       "thennow": {
         "spot": "青い池のまわり",
+        "now_note": "「いま」は2019年9〜10月に撮影された空中写真です",
         "note": "60年前、ここに池はありませんでした。1988年の十勝岳の噴火のあと、泥流をためこむ砂防ダム（ブロック堰堤）が1989年に約半年で急いでつくられ、そこに水がたまってできたのが青い池です。水が青く見えるのは、白金温泉のあたりで湧くアルミニウムを含む水が川の水と混ざってできる、ごく細かな粒が青い光を散らすためといわれています。",
         "items": [
           {
@@ -127,6 +129,64 @@
       ],
       "reel": "https://www.instagram.com/reel/DeeXzUAKzBi/",
       "published": "2026-10-14"
+    },
+    {
+      "id": "town",
+      "no": 3,
+      "name": "美瑛の市街地",
+      "kana": "びえいの しがいち",
+      "lead": "美瑛駅と道の駅がある、町のまんなか",
+      "origin": "「美瑛」の名は、アイヌ語の「ピイェ」（脂）から。十勝岳の硫黄が溶けて、美瑛川が白くにごっていたことから、こう呼ばれていたようです。",
+      "body": "本町・中町など17の町からなる、美瑛のまちなかです。JR富良野線の美瑛駅を中心に広がり、駅前には観光案内所「四季の情報館」や、道の駅「丘のくら」があります。",
+      "seasons": [
+        {
+          "label": "冬",
+          "date": "2026-02-25",
+          "img": "photos/districts/town-1.jpg"
+        },
+        {
+          "label": "春",
+          "date": "2026-05-23",
+          "img": "photos/districts/town-2.jpg"
+        },
+        {
+          "label": "夏",
+          "date": "2026-07-05",
+          "img": "photos/districts/town-3.jpg"
+        },
+        {
+          "label": "秋",
+          "date": "2026-09-23",
+          "img": "photos/districts/town-4.jpg"
+        }
+      ],
+      "thennow": {
+        "spot": "美瑛駅のまわり",
+        "now_note": "「いま」は2021年10月に撮影された空中写真です",
+        "note": "60年前、線路の北側には一面の田畑が広がっていました。いまはそこに家が建ちならび、町は線路をこえて広がっています。線路の南側の碁盤の目のような町並みは、60年前にはもうできていました。",
+        "items": [
+          {
+            "label": "1960年代",
+            "img": "photos/districts/town-then.jpg"
+          },
+          {
+            "label": "いま",
+            "img": "photos/districts/town-now.jpg"
+          }
+        ]
+      },
+      "terrain": {
+        "img": "photos/districts/town-terrain.jpg",
+        "note": "まわりの丘にくらべて平らな土地に、町が広がっています。南のふちを美瑛川が流れ、川の向こうは丘です。"
+      },
+      "sources": [
+        {
+          "title": "アイヌ語地名で歩く美瑛・上富良野（十勝岳ジオパーク、2022年）",
+          "url": "https://tokachidake-geopark.jp/wp/wp-content/uploads/2022/11/9ffba19f3abbcff79f466a8106ae0b52.pdf"
+        }
+      ],
+      "reel": "https://www.instagram.com/reel/De_12AAKAwN/",
+      "published": "2026-10-28"
     }
   ]
 }

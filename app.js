@@ -694,7 +694,7 @@ async function loadDistrictFeature() {
     document.getElementById("space-feature").href = `districts.html#${e.id}`;
     document.getElementById("space-feature-img").src = img;
     document.getElementById("space-feature-img").alt = now
-      ? `${e.name}・${e.thennow.spot}の空中写真(いま)`
+      ? `${e.name}・${e.thennow.spot}の${now.kind || "空中写真"}(いま)`
       : `${e.name}の衛星写真。金色の線が地区の範囲`;
     document.getElementById("space-feature-kicker").textContent = `美瑛の地区を、宇宙から No.${e.no}`;
     document.getElementById("space-feature-title").textContent = `${e.name}（${e.kana}）`;
