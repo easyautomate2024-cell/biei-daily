@@ -5,6 +5,14 @@
   "updated_at": "2026-10-19T04:53:40Z",
   "passes": [
     {
+      "date": "2026-10-28",
+      "scene_id": "S2C_54TXP_20261028_0_L2A",
+      "cloud": 87.5,
+      "visible": 15.6,
+      "thumb": "pass-2026-10-28.jpg",
+      "used": false
+    },
+    {
       "date": "2026-10-23",
       "scene_id": "S2B_54TXP_20261023_1_L2A",
       "cloud": 29.6,
@@ -35,17 +43,9 @@
       "visible": 96.7,
       "thumb": "pass-2026-10-10.jpg",
       "used": false
-    },
-    {
-      "date": "2026-10-08",
-      "scene_id": "S2C_54TXP_20261008_0_L2A",
-      "cloud": 53.2,
-      "visible": 10.1,
-      "thumb": "pass-2026-10-08.jpg",
-      "used": false
     }
   ],
-  "checked_at": "2026-10-28T05:55:35Z",
+  "checked_at": "2026-10-29T05:59:43Z",
   "years": [
     {
       "year": 2025,
@@ -85,7 +85,8 @@
       "S2B_54TXP_20261023_1_L2A",
       "S2C_54TXP_20260908_0_L2A",
       "S2C_54TXP_20260928_0_L2A",
-      "S2C_54TXP_20261008_0_L2A"
+      "S2C_54TXP_20261008_0_L2A",
+      "S2C_54TXP_20261028_0_L2A"
     ]
   }
 }
