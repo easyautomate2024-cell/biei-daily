@@ -23,7 +23,9 @@ li{margin-bottom:6px}
 .item img{width:100%;height:auto;border-radius:8px;display:block}
 .item h3{font-size:17px;margin:14px 0 8px}
 .item p{font-size:14px;color:var(--muted);margin:0 0 10px}
-.dl{display:inline-block;background:var(--accent);color:#fff;text-decoration:none;font-size:15px;font-weight:700;padding:11px 22px;border-radius:980px}
+.btns{display:flex;flex-wrap:wrap;gap:10px}
+.dl{display:inline-block;background:var(--accent);color:#fff;text-decoration:none;font-size:15px;font-weight:700;padding:11px 22px;border-radius:980px;border:1.5px solid var(--accent)}
+.dl.sub{background:#fff;color:var(--accent)}
 .private{background:#eef5ff;border:1px solid #cddcf3;border-radius:12px;padding:14px 18px;font-size:14.5px}
 .small{font-size:13.5px;color:var(--muted)}
 footer{margin-top:40px;padding-top:20px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
@@ -35,36 +37,53 @@ footer a{color:var(--muted)}
 <header>
   <p class="eyebrow">置杵牛 開拓120周年 記念誌</p>
   <h1>三井農場のあたりの空中写真</h1>
-  <p class="lead">いただいた入植者の地図と同じ向き（北が左上）で、地図の範囲の縦横1.5倍を360dpiで切り出しました。いま（2017年）と、1970年代・1960年代の3枚です。</p>
+  <p class="lead">いただいた入植者の地図と同じ向き（北が左上）で、地図の範囲の縦横1.5倍を360dpiで切り出しました。いま（2017年）と、1970年代・1960年代の3枚です。それぞれ、地図の名前を同じ場所に入れた「名前入り」もあります。</p>
 </header>
 
 <p class="private"><strong>このページは公開していません。</strong>どこからもリンクしておらず、検索にも出ません。記念誌ができましたら削除します。</p>
 
 <div class="item">
+  <img src="names-3eras.jpg" alt="1960年代・1970年代・2017年の空中写真を縦に3枚並べ、入植者の名前を同じ場所に入れた見比べ図">
+  <h3>名前入りの見比べ（3年代）</h3>
+  <p>地図の名前を、3年代の写真の同じ場所に入れて縦に並べたものです（画面で見る用）。</p>
+  <div class="btns"><a class="dl" href="names-3eras.jpg" download="三井農場_名前入り_3年代の見比べ.jpg">ダウンロード（1.0MB）</a></div>
+</div>
+
+<div class="item">
   <img src="guide-2017.jpg" alt="2017年の空中写真の全体。白い枠が地図とほぼ同じ範囲。三井山の山頂に三角の印">
   <h3>いま：2017年7〜9月（4565×2638画素・322×186mm・360dpi）</h3>
-  <p>白い枠が、地図とほぼ同じ範囲です。実際のファイルに線や文字は入っていません。左下の角（黄色の点線）だけは2017年の写真が無いため、別の年の写真で埋めています（地図の範囲の外です）。</p>
-  <a class="dl" href="mitsui-2017-360dpi.jpg" download="三井農場_空中写真_2017_360dpi.jpg">ダウンロード（6.9MB）</a>
+  <p>白い枠が、地図とほぼ同じ範囲です（実際のファイルに枠はありません）。左下の角（黄色の点線）だけは2017年の写真が無いため、別の年の写真で埋めています（地図の範囲の外です）。</p>
+  <div class="btns">
+    <a class="dl" href="mitsui-2017-360dpi.jpg" download="三井農場_空中写真_2017_360dpi.jpg">名前なし（6.9MB）</a>
+    <a class="dl sub" href="mitsui-2017-names-360dpi.jpg" download="三井農場_空中写真_2017_名前入り_360dpi.jpg">名前入り（6.9MB）</a>
+  </div>
 </div>
 
 <div class="item">
   <img src="t-1970s.jpg" alt="同じ範囲の1970年代のカラー空中写真。紅葉した林と四角い植林の区画">
   <h3>1970年代：1974〜1978年（同じ範囲・同じ大きさ）</h3>
   <p>秋に撮られたカラー写真です。</p>
-  <a class="dl" href="mitsui-1970s-360dpi.jpg" download="三井農場_空中写真_1970年代_360dpi.jpg">ダウンロード（5.6MB）</a>
+  <div class="btns">
+    <a class="dl" href="mitsui-1970s-360dpi.jpg" download="三井農場_空中写真_1970年代_360dpi.jpg">名前なし（5.6MB）</a>
+    <a class="dl sub" href="mitsui-1970s-names-360dpi.jpg" download="三井農場_空中写真_1970年代_名前入り_360dpi.jpg">名前入り（5.6MB）</a>
+  </div>
 </div>
 
 <div class="item">
   <img src="t-1960s.jpg" alt="同じ範囲の1960年代の白黒空中写真。曲がりくねった道と草地、林">
   <h3>1960年代：1961〜1969年（同じ範囲・同じ大きさ）</h3>
   <p>白黒の写真です。</p>
-  <a class="dl" href="mitsui-1960s-360dpi.jpg" download="三井農場_空中写真_1960年代_360dpi.jpg">ダウンロード（3.8MB）</a>
+  <div class="btns">
+    <a class="dl" href="mitsui-1960s-360dpi.jpg" download="三井農場_空中写真_1960年代_360dpi.jpg">名前なし（3.8MB）</a>
+    <a class="dl sub" href="mitsui-1960s-names-360dpi.jpg" download="三井農場_空中写真_1960年代_名前入り_360dpi.jpg">名前入り（4.0MB）</a>
+  </div>
 </div>
 
 <h2>使い方</h2>
 <ul>
-  <li>3枚とも、範囲・向き・大きさが同じです。並べても、重ねても位置がそろいます。</li>
+  <li>どの写真も、範囲・向き・大きさが同じです。並べても、重ねても位置がそろいます。</li>
   <li>北は画面の左上（地図と同じ向き）です。白い枠の大きさで切り抜くと、地図とほぼ同じ範囲になります。まわりに余裕があるので、位置や寄り引きは動かせます。</li>
+  <li>名前入りは、地図の名前の場所を写真の上に移したものです（だいたいの位置）。文字は白に黒のふちどりで、地図の範囲を160mm幅で使うと1文字約4mmになります。</li>
   <li>2017年の写真は、木の1本1本が見える細かさです。1960年代・1970年代の写真はもとが粗いため、近くで見るとやわらかくなります。</li>
   <li>衛星（10m）の画像ではここまで寄れないので、国土地理院の空中写真（飛行機から撮った写真）を使っています。</li>
 </ul>
