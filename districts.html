@@ -119,7 +119,7 @@
 .howto { font-size: 14.5px; color: var(--muted); line-height: 1.8; }
 @media (max-width: 600px) {
   #dmap { width: calc(100% + 40px); margin: -24px -20px 16px; height: min(60vh, 520px); }
-  /* 60年前といま がある回は四季を小さく横一列に。ない回は2列 */
+  /* 60年前といま がある回は四季を小さく横一列に。ない回と、四季が主役の回(seasons_title あり)は2列 */
   .dseasons { grid-template-columns: repeat(2, 1fr); }
   .dseasons.small { grid-template-columns: repeat(4, 1fr); gap: 6px; }
   .dseasons.small figcaption { font-size: 11.5px; }
@@ -224,8 +224,8 @@
       <h2>${esc(e.name)}<span class="kana">${esc(e.kana)}</span></h2>
       <p class="dlead">${esc(e.lead)}</p>
       ${e.thennow ? thennow(e) : ""}
-      ${e.thennow ? `<p class="dsub">宇宙から見た四季(金色の線が地区の範囲)</p>` : ""}
-      <div class="dseasons${e.thennow ? " small" : ""}">
+      ${e.thennow ? `<p class="dsub">${esc(e.seasons_title || "宇宙から見た四季(金色の線が地区の範囲)")}</p>` : ""}
+      <div class="dseasons${e.thennow && !e.seasons_title ? " small" : ""}">
         ${e.seasons.map((s) => `
           <figure>
             <img src="${esc(s.img)}" width="720" height="800" loading="lazy" alt="${esc(e.name)}の衛星写真(${esc(s.label)}・${fmt(s.date)})。金色の線が地区の範囲">

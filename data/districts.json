@@ -187,6 +187,73 @@
       ],
       "reel": "https://www.instagram.com/reel/De_12AAKAwN/",
       "published": "2026-10-28"
+    },
+    {
+      "id": "d0350",
+      "no": 4,
+      "name": "中宇莫別",
+      "kana": "なかうばくべつ",
+      "lead": "田んぼの水がめ・聖台ダムの湖がある地区",
+      "origin": "「宇莫別」の名は、アイヌ語の「ウパクペッ」（たがいに・匹敵する・川）から。辺別川の本流と、ほぼ同じくらいの水の量で並んで流れていることから、こう呼ばれたとされます。",
+      "body": "美瑛の町の東にある地区です。北西の端、旭川市との境の近くにある聖台ダムは、田んぼに水を送るために1937年（昭和12年）にできたダムで、できた当時は国内で最大規模の水田かんがい用の貯水池でした（土木学会の選奨土木遺産）。ダムのほとりの聖台ダム公園には、およそ500本のエゾヤマザクラがあり、例年5月はじめに咲きます。",
+      "seasons_title": "宇宙から見た、聖台ダムの湖の四季(2026年・金色の線が地区の範囲)",
+      "seasons": [
+        {
+          "label": "冬",
+          "date": "2026-03-22",
+          "img": "photos/districts/d0350-1.jpg"
+        },
+        {
+          "label": "春",
+          "date": "2026-04-16",
+          "img": "photos/districts/d0350-2.jpg"
+        },
+        {
+          "label": "夏",
+          "date": "2026-08-29",
+          "img": "photos/districts/d0350-3.jpg"
+        },
+        {
+          "label": "秋",
+          "date": "2026-09-23",
+          "img": "photos/districts/d0350-4.jpg"
+        }
+      ],
+      "thennow": {
+        "spot": "聖台ダムの湖のまわり",
+        "now_note": "「いま」は2026年7月5日の衛星写真です",
+        "note": "60年前の写真でも、湖はいまと同じように水をたたえています。宇宙から1年を追うと、雪どけのあとの4月には水でいっぱいだった湖が、夏のあいだに少しずつ減り、9月には湖の底が見えていました(下の四季の写真)。2024年と2025年も同じで、2009年秋の空中写真でも、水は抜けていました。",
+        "items": [
+          {
+            "label": "1960年代",
+            "img": "photos/districts/d0350-then.jpg"
+          },
+          {
+            "label": "いま",
+            "img": "photos/districts/d0350-now.jpg",
+            "kind": "衛星写真"
+          }
+        ]
+      },
+      "terrain": {
+        "img": "photos/districts/d0350-terrain.jpg",
+        "note": "宇莫別川の細長い谷にそって、北西から南東へのびる地区です。谷の北西の端を聖台ダムがせき止め、その上流が湖になっています。"
+      },
+      "sources": [
+        {
+          "title": "聖台ダム（土木学会 選奨土木遺産）",
+          "url": "https://committees.jsce.or.jp/heritage/node/82"
+        },
+        {
+          "title": "アイヌ語地名リスト ア行〜サ行（北海道環境生活部）",
+          "url": "https://www.pref.hokkaido.lg.jp/fs/1/3/2/2/4/2/4/0/_/%E5%9C%B0%E5%90%8D%E3%83%AA%E3%82%B9%E3%83%88(%E3%82%A2%E8%A1%8C~).pdf"
+        },
+        {
+          "title": "聖台ダム公園（美瑛町・国土交通省「水辺とまち」）",
+          "url": "https://www.mlit.go.jp/river/kankyo/main/kankyou/machizukuri/utsukushiimizube/pdf/81-014591-02.pdf"
+        }
+      ],
+      "published": "2026-11-13"
     }
   ]
 }
